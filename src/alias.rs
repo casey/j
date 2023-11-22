@@ -1,8 +1,9 @@
 use super::*;
+use std::sync::Arc;
 
 /// An alias, e.g. `name := target`
 #[derive(Debug, PartialEq, Clone, Serialize)]
-pub(crate) struct Alias<'src, T = Rc<Recipe<'src>>> {
+pub(crate) struct Alias<'src, T = Arc<Recipe<'src>>> {
   pub(crate) attributes: BTreeSet<Attribute>,
   pub(crate) name: Name<'src>,
   #[serde(
@@ -17,7 +18,7 @@ impl<'src> Alias<'src, Name<'src>> {
     self.name.line
   }
 
-  pub(crate) fn resolve(self, target: Rc<Recipe<'src>>) -> Alias<'src> {
+  pub(crate) fn resolve(self, target: Arc<Recipe<'src>>) -> Alias<'src> {
     assert_eq!(self.target.lexeme(), target.name.lexeme());
 
     Alias {

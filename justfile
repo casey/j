@@ -225,4 +225,3 @@ pwd:
 # Local Variables:
 # mode: makefile
 # End:
-# vim: set ft=make :

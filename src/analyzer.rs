@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use {super::*, CompileErrorKind::*};
 
 #[derive(Default)]
@@ -87,11 +88,11 @@ impl<'src> Analyzer<'src> {
       first: recipes
         .values()
         .fold(None, |accumulator, next| match accumulator {
-          None => Some(Rc::clone(next)),
+          None => Some(Arc::clone(next)),
           Some(previous) => Some(if previous.line_number() < next.line_number() {
             previous
           } else {
-            Rc::clone(next)
+            Arc::clone(next)
           }),
         }),
       aliases,
@@ -190,7 +191,7 @@ impl<'src> Analyzer<'src> {
   }
 
   fn resolve_alias(
-    recipes: &Table<'src, Rc<Recipe<'src>>>,
+    recipes: &Table<'src, Arc<Recipe<'src>>>,
     alias: Alias<'src, Name<'src>>,
   ) -> CompileResult<'src, Alias<'src>> {
     let token = alias.name.token();
@@ -204,7 +205,7 @@ impl<'src> Analyzer<'src> {
 
     // Make sure the target recipe exists
     match recipes.get(alias.target.lexeme()) {
-      Some(target) => Ok(alias.resolve(Rc::clone(target))),
+      Some(target) => Ok(alias.resolve(Arc::clone(target))),
       None => Err(token.error(UnknownAliasTarget {
         alias: alias.name.lexeme(),
         target: alias.target.lexeme(),

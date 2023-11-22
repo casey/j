@@ -25,6 +25,7 @@ pub(crate) struct Config {
   pub(crate) list_heading: String,
   pub(crate) list_prefix: String,
   pub(crate) load_dotenv: bool,
+  pub(crate) parallel: bool,
   pub(crate) search_config: SearchConfig,
   pub(crate) shell: Option<String>,
   pub(crate) shell_args: Option<Vec<String>>,
@@ -98,6 +99,7 @@ mod arg {
   pub(crate) const LIST_PREFIX: &str = "LIST-PREFIX";
   pub(crate) const NO_DOTENV: &str = "NO-DOTENV";
   pub(crate) const NO_HIGHLIGHT: &str = "NO-HIGHLIGHT";
+  pub(crate) const PARALLEL: &str = "PARALLEL";
   pub(crate) const QUIET: &str = "QUIET";
   pub(crate) const SET: &str = "SET";
   pub(crate) const SHELL: &str = "SHELL";
@@ -224,6 +226,12 @@ impl Config {
           .long("justfile")
           .takes_value(true)
           .help("Use <JUSTFILE> as justfile"),
+      )
+      .arg(
+        Arg::with_name(arg::PARALLEL)
+          .short("p")
+          .long("parallel")
+          .help("run given tasks in parallel")
       )
       .arg(
         Arg::with_name(arg::QUIET)
@@ -630,6 +638,7 @@ impl Config {
       dotenv_filename: matches.value_of(arg::DOTENV_FILENAME).map(str::to_owned),
       dotenv_path: matches.value_of(arg::DOTENV_PATH).map(PathBuf::from),
       dry_run: matches.is_present(arg::DRY_RUN),
+      parallel: matches.is_present(arg::PARALLEL),
       dump_format: Self::dump_format_from_matches(matches)?,
       highlight: !matches.is_present(arg::NO_HIGHLIGHT),
       invocation_directory,
@@ -685,6 +694,7 @@ mod tests {
       args: [$($arg:expr),*],
       $(color: $color:expr,)?
       $(dry_run: $dry_run:expr,)?
+      $(parallel: $parallel:expr,)?
       $(dump_format: $dump_format:expr,)?
       $(highlight: $highlight:expr,)?
       $(search_config: $search_config:expr,)?
@@ -704,6 +714,7 @@ mod tests {
         let want = Config {
           $(color: $color,)?
           $(dry_run: $dry_run,)?
+          $(parallel: $parallel,)?
           $(dump_format: $dump_format,)?
           $(highlight: $highlight,)?
           $(search_config: $search_config,)?
@@ -838,6 +849,18 @@ mod tests {
     name: dry_run_short,
     args: ["-n"],
     dry_run: true,
+  }
+
+  test! {
+    name: parallel_long,
+    args: ["--parallel"],
+    parallel: true,
+  }
+
+  test! {
+    name: parallel_short,
+    args: ["-p"],
+    parallel: true,
   }
 
   error! {

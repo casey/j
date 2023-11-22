@@ -12,6 +12,7 @@ pub(crate) enum Attribute {
   NoCd,
   NoExitMessage,
   Private,
+  Parallel,
   Unix,
   Windows,
 }

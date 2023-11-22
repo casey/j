@@ -1,11 +1,12 @@
 use super::*;
+use std::sync::Arc;
 
 pub(crate) type UnresolvedRecipe<'src> = Recipe<'src, UnresolvedDependency<'src>>;
 
 impl<'src> UnresolvedRecipe<'src> {
   pub(crate) fn resolve(
     self,
-    resolved: Vec<Rc<Recipe<'src>>>,
+    resolved: Vec<Arc<Recipe<'src>>>,
   ) -> CompileResult<'src, Recipe<'src>> {
     assert_eq!(
       self.dependencies.len(),

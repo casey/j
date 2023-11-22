@@ -1255,6 +1255,7 @@ Recipes may be annotated with attributes that change their behavior.
 | `[macos]`<sup>1.8.0</sup>           | Enable recipe on MacOS.                         |
 | `[no-cd]`<sup>1.9.0</sup>           | Don't change directory before executing recipe. |
 | `[no-exit-message]`<sup>1.7.0</sup> | Don't print an error message if recipe fails.   |
+| `[parallel]`<sup>master</sup>       | See [Parallel execution](#parallel-execution).  |
 | `[private]`<sup>1.10.0</sup>        | See [Private Recipes](#private-recipes).        |
 | `[unix]`<sup>1.8.0</sup>            | Enable recipe on Unixes. (Includes MacOS).      |
 | `[windows]`<sup>1.8.0</sup>         | Enable recipe on Windows.                       |
@@ -2142,6 +2143,32 @@ Available recipes:
 ```
 
 This is useful for helper recipes which are only meant to be used as dependencies of other recipes.
+
+### Parallel execution
+
+`just` has two separate ways to enable parallel execution of tasks.
+
+Run the given recipes on the command line in parallel:
+
+```sh
+$ just --parallel recipe_1 recipe_2 recipe_3
+[...]
+```
+
+And using the `[parallel]` attribute, task dependencies are allowed to run in
+parallel:
+
+```just
+recipe_1:
+  sleep 1
+
+recipe_2:
+  sleep 2
+
+[parallel]
+foo: recipe_1 recipe_2
+  echo hello
+```
 
 ### Quiet Recipes
 

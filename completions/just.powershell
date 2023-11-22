@@ -46,6 +46,8 @@ Register-ArgumentCompleter -Native -CommandName 'just' -ScriptBlock {
             [CompletionResult]::new('--highlight', 'highlight', [CompletionResultType]::ParameterName, 'Highlight echoed recipe lines in bold')
             [CompletionResult]::new('--no-dotenv', 'no-dotenv', [CompletionResultType]::ParameterName, 'Don''t load `.env` file')
             [CompletionResult]::new('--no-highlight', 'no-highlight', [CompletionResultType]::ParameterName, 'Don''t highlight echoed recipe lines in bold')
+            [CompletionResult]::new('-p', 'p', [CompletionResultType]::ParameterName, 'run given tasks in parallel')
+            [CompletionResult]::new('--parallel', 'parallel', [CompletionResultType]::ParameterName, 'run given tasks in parallel')
             [CompletionResult]::new('-q', 'q', [CompletionResultType]::ParameterName, 'Suppress all output')
             [CompletionResult]::new('--quiet', 'quiet', [CompletionResultType]::ParameterName, 'Suppress all output')
             [CompletionResult]::new('--shell-command', 'shell-command', [CompletionResultType]::ParameterName, 'Invoke <COMMAND> with the shell used to run recipe lines and backticks')

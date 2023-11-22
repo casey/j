@@ -57,6 +57,7 @@ complete -c just -n "__fish_use_subcommand" -s n -l dry-run -d 'Print what just 
 complete -c just -n "__fish_use_subcommand" -l highlight -d 'Highlight echoed recipe lines in bold'
 complete -c just -n "__fish_use_subcommand" -l no-dotenv -d 'Don\'t load `.env` file'
 complete -c just -n "__fish_use_subcommand" -l no-highlight -d 'Don\'t highlight echoed recipe lines in bold'
+complete -c just -n "__fish_use_subcommand" -s p -l parallel -d 'run given tasks in parallel'
 complete -c just -n "__fish_use_subcommand" -s q -l quiet -d 'Suppress all output'
 complete -c just -n "__fish_use_subcommand" -l shell-command -d 'Invoke <COMMAND> with the shell used to run recipe lines and backticks'
 complete -c just -n "__fish_use_subcommand" -l clear-shell-args -d 'Clear shell arguments'

@@ -1,10 +1,11 @@
 use super::*;
+use std::sync::Arc;
 
 pub(crate) trait Keyed<'key> {
   fn key(&self) -> &'key str;
 }
 
-impl<'key, T: Keyed<'key>> Keyed<'key> for Rc<T> {
+impl<'key, T: Keyed<'key>> Keyed<'key> for Arc<T> {
   fn key(&self) -> &'key str {
     self.as_ref().key()
   }

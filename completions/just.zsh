@@ -42,6 +42,8 @@ _just() {
 '--highlight[Highlight echoed recipe lines in bold]' \
 '--no-dotenv[Don'\''t load `.env` file]' \
 '--no-highlight[Don'\''t highlight echoed recipe lines in bold]' \
+'-p[run given tasks in parallel]' \
+'--parallel[run given tasks in parallel]' \
 '(-n --dry-run)-q[Suppress all output]' \
 '(-n --dry-run)--quiet[Suppress all output]' \
 '--shell-command[Invoke <COMMAND> with the shell used to run recipe lines and backticks]' \

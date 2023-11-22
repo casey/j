@@ -23,6 +23,7 @@ atty = "0.2.0"
 camino = "1.0.4"
 clap = { version = "2.33.0", features = ["wrap_help"] }
 ctrlc = { version = "3.1.1", features = ["termination"] }
+crossbeam = "0.8.2"
 derivative = "2.0.0"
 dotenvy = "0.15"
 edit-distance = "2.0.0"

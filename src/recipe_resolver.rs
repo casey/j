@@ -1,8 +1,9 @@
+use std::sync::Arc;
 use {super::*, CompileErrorKind::*};
 
 pub(crate) struct RecipeResolver<'src: 'run, 'run> {
   unresolved_recipes: Table<'src, UnresolvedRecipe<'src>>,
-  resolved_recipes: Table<'src, Rc<Recipe<'src>>>,
+  resolved_recipes: Table<'src, Arc<Recipe<'src>>>,
   assignments: &'run Table<'src, Assignment<'src>>,
 }
 
@@ -10,7 +11,7 @@ impl<'src: 'run, 'run> RecipeResolver<'src, 'run> {
   pub(crate) fn resolve_recipes(
     unresolved_recipes: Table<'src, UnresolvedRecipe<'src>>,
     assignments: &Table<'src, Assignment<'src>>,
-  ) -> CompileResult<'src, Table<'src, Rc<Recipe<'src>>>> {
+  ) -> CompileResult<'src, Table<'src, Arc<Recipe<'src>>>> {
     let mut resolver = RecipeResolver {
       resolved_recipes: Table::new(),
       unresolved_recipes,
@@ -72,20 +73,20 @@ impl<'src: 'run, 'run> RecipeResolver<'src, 'run> {
     &mut self,
     stack: &mut Vec<&'src str>,
     recipe: UnresolvedRecipe<'src>,
-  ) -> CompileResult<'src, Rc<Recipe<'src>>> {
+  ) -> CompileResult<'src, Arc<Recipe<'src>>> {
     if let Some(resolved) = self.resolved_recipes.get(recipe.name()) {
-      return Ok(Rc::clone(resolved));
+      return Ok(Arc::clone(resolved));
     }
 
     stack.push(recipe.name());
 
-    let mut dependencies: Vec<Rc<Recipe>> = Vec::new();
+    let mut dependencies: Vec<Arc<Recipe>> = Vec::new();
     for dependency in &recipe.dependencies {
       let name = dependency.recipe.lexeme();
 
       if let Some(resolved) = self.resolved_recipes.get(name) {
         // dependency already resolved
-        dependencies.push(Rc::clone(resolved));
+        dependencies.push(Arc::clone(resolved));
       } else if stack.contains(&name) {
         let first = stack[0];
         stack.push(first);
@@ -113,8 +114,8 @@ impl<'src: 'run, 'run> RecipeResolver<'src, 'run> {
 
     stack.pop();
 
-    let resolved = Rc::new(recipe.resolve(dependencies)?);
-    self.resolved_recipes.insert(Rc::clone(&resolved));
+    let resolved = Arc::new(recipe.resolve(dependencies)?);
+    self.resolved_recipes.insert(Arc::clone(&resolved));
     Ok(resolved)
   }
 }

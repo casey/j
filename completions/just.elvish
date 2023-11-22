@@ -41,6 +41,8 @@ edit:completion:arg-completer[just] = [@words]{
             cand --highlight 'Highlight echoed recipe lines in bold'
             cand --no-dotenv 'Don''t load `.env` file'
             cand --no-highlight 'Don''t highlight echoed recipe lines in bold'
+            cand -p 'run given tasks in parallel'
+            cand --parallel 'run given tasks in parallel'
             cand -q 'Suppress all output'
             cand --quiet 'Suppress all output'
             cand --shell-command 'Invoke <COMMAND> with the shell used to run recipe lines and backticks'
