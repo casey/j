@@ -45,6 +45,10 @@ impl<'src> Expression<'src> {
   pub(crate) fn variables<'expression>(&'expression self) -> Variables<'expression, 'src> {
     Variables::new(self)
   }
+
+  pub(crate) fn walk<'expression>(&'expression self) -> ExpressionWalker<'expression, 'src> {
+    ExpressionWalker::new(self)
+  }
 }
 
 impl<'src> Display for Expression<'src> {
