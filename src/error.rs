@@ -17,6 +17,13 @@ pub(crate) enum Error<'src> {
     token: Token<'src>,
     output_error: OutputError,
   },
+  CacheFileRead {
+    cache_filename: Option<PathBuf>,
+  },
+  CacheFileWrite {
+    cache_filename: PathBuf,
+    io_error: io::Error,
+  },
   ChooserInvoke {
     shell_binary: String,
     shell_arguments: String,
@@ -96,6 +103,10 @@ pub(crate) enum Error<'src> {
     io_error: io::Error,
   },
   Homedir,
+  ImpureCachedRecipe {
+    recipe: &'src str,
+    impure_contained: String,
+  },
   InitExists {
     justfile: PathBuf,
   },
@@ -267,6 +278,12 @@ impl<'src> ColorDisplay for Error<'src> {
           }?,
         OutputError::Utf8(utf8_error) => write!(f, "Backtick succeeded but stdout was not utf8: {utf8_error}")?,
       }
+      CacheFileRead {cache_filename} => match cache_filename {
+        Some(cache_filename) =>
+        write!(f, "Failed to read cache file: {}", cache_filename.display())?,
+        None => write!(f, "Failed to get default cache file")?,
+      }
+      CacheFileWrite{cache_filename, io_error} => write!(f, "Failed to write cache file ({}): {io_error}", cache_filename.display())?,
       ChooserInvoke { shell_binary, shell_arguments, chooser, io_error} => {
         let chooser = chooser.to_string_lossy();
         write!(f, "Chooser `{shell_binary} {shell_arguments} {chooser}` invocation failed: {io_error}")?;
@@ -354,6 +371,9 @@ impl<'src> ColorDisplay for Error<'src> {
       }
       Homedir => {
         write!(f, "Failed to get homedir")?;
+      }
+      ImpureCachedRecipe { recipe, impure_contained } => {
+        write!(f, "Cached recipe `{recipe}` contains {impure_contained}, which could run multiple times.\nYou must inline it if possible or set it to a variable outside of the recipe block: my_var := ...")?;
       }
       InitExists { justfile } => {
         write!(f, "Justfile `{}` already exists", justfile.display())?;

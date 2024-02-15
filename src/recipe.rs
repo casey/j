@@ -1,6 +1,9 @@
 use {
   super::*,
-  std::process::{ExitStatus, Stdio},
+  std::{
+    os::unix::ffi::OsStrExt,
+    process::{ExitStatus, Stdio},
+  },
 };
 
 /// Return a `Error::Signal` if the process was terminated by a signal,
@@ -143,6 +146,110 @@ impl<'src, D> Recipe<'src, D> {
     self.attributes.contains(&Attribute::NoQuiet)
   }
 
+  fn cached(&self) -> bool {
+    self.attributes.contains(&Attribute::Cached)
+  }
+
+  fn get_updated_cache_if_outdated<'run>(
+    &self,
+    context: &RecipeContext<'src, 'run>,
+    mut evaluator: Evaluator<'src, 'run>,
+  ) -> RunResult<'src, Option<(PathBuf, JustfileCache)>> {
+    let find_backticks = self
+      .body
+      .iter()
+      .flat_map(|line| line.fragments.iter())
+      .filter_map(|fragment| match fragment {
+        Fragment::Interpolation { expression } => Some(expression),
+        _ => None,
+      })
+      .flat_map(|expression| expression.walk())
+      .filter_map(|sub_expression| match sub_expression {
+        Expression::Backtick { contents, .. } => Some(contents),
+        _ => None,
+      });
+
+    if find_backticks.into_iter().next().is_some() {
+      return Err(Error::ImpureCachedRecipe {
+        recipe: self.name(),
+        impure_contained: "a backtick expression".to_string(),
+      });
+    }
+
+    let cache_filename = match &context.settings.cache_filename {
+      Some(cache_filename) => context.search.working_directory.join(cache_filename),
+      None => {
+        let project_dir = &context.search.working_directory;
+        let project_name = project_dir
+          .file_name()
+          .and_then(|name| name.to_str())
+          .unwrap_or("UNKNOWN_PROJECT");
+        let path_hash = blake3::hash(project_dir.as_os_str().as_bytes()).to_hex();
+
+        dirs::cache_dir()
+          .ok_or(Error::CacheFileRead {
+            cache_filename: None,
+          })?
+          .join("justfiles")
+          .join(format!("{project_name}-{path_hash}.json"))
+      }
+    };
+
+    let mut cache: JustfileCache = fs::read_to_string(&cache_filename)
+      .or(Err(()))
+      .and_then(|cache| serde_json::from_str(&cache).or(Err(())))
+      .or_else(|_| {
+        Err(Error::CacheFileRead {
+          cache_filename: Some(cache_filename.clone()),
+        })
+      })?;
+
+    match cache.recipe_caches.get(self.name()) {
+      None => Ok(None),
+      Some(previous_run) => {
+        // TODO: Prevent double work by evaluating twice
+        let mut recipe_hash = blake3::Hasher::new();
+        for line in &self.body {
+          recipe_hash.update(evaluator.evaluate_line(line, false)?.as_bytes());
+        }
+        let recipe_hash = recipe_hash.finalize().to_hex();
+
+        if previous_run.hash == recipe_hash.as_str() {
+          Ok(None)
+        } else {
+          cache.recipe_caches.insert(
+            self.name().to_string(),
+            RecipeCache {
+              hash: recipe_hash.to_string(),
+            },
+          );
+          Ok(Some((cache_filename, cache)))
+        }
+      }
+    }
+  }
+
+  fn save_latest_cache(
+    &self,
+    cache_filename: PathBuf,
+    cache: JustfileCache,
+  ) -> RunResult<'src, ()> {
+    fs::write(
+      &cache_filename,
+      serde_json::to_string(&cache).or_else(|_| {
+        Err(Error::Internal {
+          message: format!("Failed to serialize cache: {cache:?}"),
+        })
+      })?,
+    )
+    .or_else(|io_error| {
+      Err(Error::CacheFileWrite {
+        cache_filename,
+        io_error,
+      })
+    })
+  }
+
   pub(crate) fn run<'run>(
     &self,
     context: &RecipeContext<'src, 'run>,
@@ -152,6 +259,27 @@ impl<'src, D> Recipe<'src, D> {
     positional: &[String],
   ) -> RunResult<'src, ()> {
     let config = &context.config;
+
+    let updated_cache = if !self.cached() {
+      None
+    } else {
+      let evaluator = Evaluator::recipe_evaluator(config, dotenv, &scope, context.settings, search);
+      match self.get_updated_cache_if_outdated(context, evaluator)? {
+        None => {
+          if config.verbosity.loquacious() {
+            let color = config.color.stderr().banner();
+            eprintln!(
+              "{}===> Recipe `{}` matches latest cache. Skipping...{}",
+              color.prefix(),
+              self.name,
+              color.suffix()
+            );
+          }
+          return Ok(());
+        }
+        Some(cache_info) => Some(cache_info),
+      }
+    };
 
     if config.verbosity.loquacious() {
       let color = config.color.stderr().banner();
@@ -163,13 +291,18 @@ impl<'src, D> Recipe<'src, D> {
       );
     }
 
-    let evaluator =
-      Evaluator::recipe_evaluator(context.config, dotenv, &scope, context.settings, search);
+    let evaluator = Evaluator::recipe_evaluator(config, dotenv, &scope, context.settings, search);
 
     if self.shebang {
-      self.run_shebang(context, dotenv, &scope, positional, config, evaluator)
+      self.run_shebang(context, dotenv, &scope, positional, config, evaluator)?;
     } else {
-      self.run_linewise(context, dotenv, &scope, positional, config, evaluator)
+      self.run_linewise(context, dotenv, &scope, positional, config, evaluator)?;
+    }
+
+    if let Some((cache_filename, cache)) = updated_cache {
+      self.save_latest_cache(cache_filename, cache)
+    } else {
+      Ok(())
     }
   }
 

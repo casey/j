@@ -3,6 +3,7 @@ use super::*;
 #[derive(Debug, Clone)]
 pub(crate) enum Setting<'src> {
   AllowDuplicateRecipes(bool),
+  CacheFilename(String),
   DotenvFilename(String),
   DotenvLoad(bool),
   DotenvPath(String),
@@ -29,7 +30,10 @@ impl<'src> Display for Setting<'src> {
       | Setting::Quiet(value)
       | Setting::WindowsPowerShell(value) => write!(f, "{value}"),
       Setting::Shell(shell) | Setting::WindowsShell(shell) => write!(f, "{shell}"),
-      Setting::DotenvFilename(value) | Setting::DotenvPath(value) | Setting::Tempdir(value) => {
+      Setting::CacheFilename(value)
+      | Setting::DotenvFilename(value)
+      | Setting::DotenvPath(value)
+      | Setting::Tempdir(value) => {
         write!(f, "{value:?}")
       }
     }
