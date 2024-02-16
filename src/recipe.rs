@@ -165,14 +165,21 @@ impl<'src, D> Recipe<'src, D> {
       })
       .flat_map(|expression| expression.walk())
       .filter_map(|sub_expression| match sub_expression {
-        Expression::Backtick { contents, .. } => Some(contents),
+        Expression::Backtick { .. } => Some("a backtick expression".to_string()),
+        Expression::Call { thunk } => match thunk {
+          Thunk::Nullary { name, .. } => {
+            let name = name.lexeme();
+            (name == "uuid" || name == "just_pid").then(|| format!("a call to `{name}`"))
+          }
+          _ => None,
+        },
         _ => None,
       });
 
-    if find_backticks.into_iter().next().is_some() {
-      return Err(Error::ImpureCachedRecipe {
+    if let Some(describe_invalid) = find_backticks.into_iter().next() {
+      return Err(Error::InvalidCachedRecipe {
         recipe: self.name(),
-        impure_contained: "a backtick expression".to_string(),
+        describe_invalid,
       });
     }
 
@@ -195,38 +202,38 @@ impl<'src, D> Recipe<'src, D> {
       }
     };
 
-    let mut cache: JustfileCache = fs::read_to_string(&cache_filename)
-      .or(Err(()))
-      .and_then(|cache| serde_json::from_str(&cache).or(Err(())))
-      .or_else(|_| {
-        Err(Error::CacheFileRead {
-          cache_filename: Some(cache_filename.clone()),
-        })
-      })?;
+    let mut cache = if !cache_filename.exists() {
+      JustfileCache::new()
+    } else {
+      fs::read_to_string(&cache_filename)
+        .or(Err(()))
+        .and_then(|cache| serde_json::from_str(&cache).or(Err(())))
+        .or_else(|_| {
+          Err(Error::CacheFileRead {
+            cache_filename: Some(cache_filename.clone()),
+          })
+        })?
+    };
 
-    match cache.recipe_caches.get(self.name()) {
-      None => Ok(None),
-      Some(previous_run) => {
-        // TODO: Prevent double work by evaluating twice
-        let mut recipe_hash = blake3::Hasher::new();
-        for line in &self.body {
-          recipe_hash.update(evaluator.evaluate_line(line, false)?.as_bytes());
-        }
-        let recipe_hash = recipe_hash.finalize().to_hex();
+    // TODO: Prevent double work/evaluating twice
+    let mut recipe_hash = blake3::Hasher::new();
+    for line in &self.body {
+      recipe_hash.update(evaluator.evaluate_line(line, false)?.as_bytes());
+    }
+    let recipe_hash = recipe_hash.finalize().to_hex();
 
-        if previous_run.hash == recipe_hash.as_str() {
-          Ok(None)
-        } else {
-          cache.recipe_caches.insert(
-            self.name().to_string(),
-            RecipeCache {
-              hash: recipe_hash.to_string(),
-            },
-          );
-          Ok(Some((cache_filename, cache)))
-        }
+    if let Some(previous_run) = cache.recipe_caches.get(self.name()) {
+      if previous_run.hash == recipe_hash.as_str() {
+        return Ok(None);
       }
     }
+    cache.recipe_caches.insert(
+      self.name().to_string(),
+      RecipeCache {
+        hash: recipe_hash.to_string(),
+      },
+    );
+    Ok(Some((cache_filename, cache)))
   }
 
   fn save_latest_cache(
@@ -234,20 +241,31 @@ impl<'src, D> Recipe<'src, D> {
     cache_filename: PathBuf,
     cache: JustfileCache,
   ) -> RunResult<'src, ()> {
-    fs::write(
-      &cache_filename,
-      serde_json::to_string(&cache).or_else(|_| {
-        Err(Error::Internal {
-          message: format!("Failed to serialize cache: {cache:?}"),
-        })
-      })?,
-    )
-    .or_else(|io_error| {
-      Err(Error::CacheFileWrite {
-        cache_filename,
-        io_error,
+    let cache = serde_json::to_string(&cache).or_else(|_| {
+      Err(Error::Internal {
+        message: format!("Failed to serialize cache: {cache:?}"),
       })
-    })
+    })?;
+
+    cache_filename
+      .parent()
+      .ok_or_else(|| {
+        io::Error::new(
+          io::ErrorKind::Unsupported,
+          format!(
+            "Cannot create parent directory of {}",
+            cache_filename.display()
+          ),
+        )
+      })
+      .and_then(|parent| fs::create_dir_all(parent))
+      .and_then(|_| fs::write(&cache_filename, cache))
+      .or_else(|io_error| {
+        Err(Error::CacheFileWrite {
+          cache_filename,
+          io_error,
+        })
+      })
   }
 
   pub(crate) fn run<'run>(

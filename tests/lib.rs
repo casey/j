@@ -37,6 +37,7 @@ mod assert_stdout;
 mod assert_success;
 mod attributes;
 mod byte_order_mark;
+mod cached_recipes;
 mod changelog;
 mod choose;
 mod command;

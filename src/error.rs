@@ -103,9 +103,9 @@ pub(crate) enum Error<'src> {
     io_error: io::Error,
   },
   Homedir,
-  ImpureCachedRecipe {
+  InvalidCachedRecipe {
     recipe: &'src str,
-    impure_contained: String,
+    describe_invalid: String,
   },
   InitExists {
     justfile: PathBuf,
@@ -372,8 +372,8 @@ impl<'src> ColorDisplay for Error<'src> {
       Homedir => {
         write!(f, "Failed to get homedir")?;
       }
-      ImpureCachedRecipe { recipe, impure_contained } => {
-        write!(f, "Cached recipe `{recipe}` contains {impure_contained}, which could run multiple times.\nYou must inline it if possible or set it to a variable outside of the recipe block: my_var := ...")?;
+      InvalidCachedRecipe { recipe, describe_invalid } => {
+        write!(f, "Cached recipe `{recipe}` contains {describe_invalid}, which could run multiple times.\nYou must inline it if possible or set it to a variable outside of the recipe block: my_var := ...")?;
       }
       InitExists { justfile } => {
         write!(f, "Justfile `{}` already exists", justfile.display())?;
