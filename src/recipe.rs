@@ -222,12 +222,12 @@ impl<'src, D> Recipe<'src, D> {
     }
     let recipe_hash = recipe_hash.finalize().to_hex();
 
-    if let Some(previous_run) = cache.recipe_caches.get(self.name()) {
+    if let Some(previous_run) = cache.recipes.get(self.name()) {
       if previous_run.body_hash == recipe_hash.as_str() {
         return Ok(None);
       }
     }
-    cache.recipe_caches.insert(
+    cache.recipes.insert(
       self.name().to_string(),
       RecipeCache {
         body_hash: recipe_hash.to_string(),

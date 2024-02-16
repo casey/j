@@ -7,14 +7,14 @@ use serde::{Deserialize, Serialize};
 pub(crate) struct JustfileCache {
   /// Only serialized for user debugging
   pub(crate) working_directory: PathBuf,
-  pub(crate) recipe_caches: HashMap<String, RecipeCache>,
+  pub(crate) recipes: HashMap<String, RecipeCache>,
 }
 
 impl JustfileCache {
   pub(crate) fn new(working_directory: PathBuf) -> Self {
     Self {
       working_directory,
-      recipe_caches: HashMap::new(),
+      recipes: HashMap::new(),
     }
   }
 }
