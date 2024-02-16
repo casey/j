@@ -21,5 +21,5 @@ impl JustfileCache {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct RecipeCache {
-  pub(crate) hash: String,
+  pub(crate) body_hash: String,
 }
