@@ -3,17 +3,21 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
+use super::*;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct JustfileCache {
   /// Only serialized for user debugging
+  pub(crate) justfile_path: PathBuf,
   pub(crate) working_directory: PathBuf,
   pub(crate) recipes: HashMap<String, RecipeCache>,
 }
 
 impl JustfileCache {
-  pub(crate) fn new(working_directory: PathBuf) -> Self {
+  pub(crate) fn new(search: &Search) -> Self {
     Self {
-      working_directory,
+      justfile_path: search.justfile.clone(),
+      working_directory: search.working_directory.clone(),
       recipes: HashMap::new(),
     }
   }

@@ -191,7 +191,10 @@ impl<'src, D> Recipe<'src, D> {
           .file_name()
           .and_then(|name| name.to_str())
           .unwrap_or("UNKNOWN_PROJECT");
-        let path_hash = &blake3::hash(project_dir.as_os_str().as_bytes()).to_hex()[..16];
+        let mut path_hash = blake3::Hasher::new();
+        path_hash.update(project_dir.as_os_str().as_bytes());
+        path_hash.update(context.search.justfile.as_os_str().as_bytes());
+        let path_hash = &path_hash.finalize().to_hex()[..16];
 
         dirs::cache_dir()
           .ok_or(Error::CacheFileRead {
@@ -203,7 +206,7 @@ impl<'src, D> Recipe<'src, D> {
     };
 
     let mut cache = if !cache_filename.exists() {
-      JustfileCache::new(context.search.working_directory.clone())
+      JustfileCache::new(context.search)
     } else {
       fs::read_to_string(&cache_filename)
         .or(Err(()))
