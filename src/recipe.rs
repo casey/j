@@ -203,7 +203,7 @@ impl<'src, D> Recipe<'src, D> {
     };
 
     let mut cache = if !cache_filename.exists() {
-      JustfileCache::new()
+      JustfileCache::new(context.search.working_directory.clone())
     } else {
       fs::read_to_string(&cache_filename)
         .or(Err(()))
