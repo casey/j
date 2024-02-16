@@ -191,7 +191,7 @@ impl<'src, D> Recipe<'src, D> {
           .file_name()
           .and_then(|name| name.to_str())
           .unwrap_or("UNKNOWN_PROJECT");
-        let path_hash = blake3::hash(project_dir.as_os_str().as_bytes()).to_hex();
+        let path_hash = &blake3::hash(project_dir.as_os_str().as_bytes()).to_hex()[..16];
 
         dirs::cache_dir()
           .ok_or(Error::CacheFileRead {
