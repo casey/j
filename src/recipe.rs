@@ -259,10 +259,17 @@ impl<'src, D> Recipe<'src, D> {
       let evaluator = Evaluator::recipe_evaluator(config, dotenv, &scope, context.settings, search);
       match self.get_updated_cache_if_outdated(context, evaluator)? {
         None => {
-          if config.verbosity.loquacious() {
-            let color = config.color.stderr().banner();
+          if config.dry_run
+            || config.verbosity.loquacious()
+            || !((context.settings.quiet && !self.no_quiet()) || config.verbosity.quiet())
+          {
+            let color = if config.highlight {
+              config.color.command(config.command_color)
+            } else {
+              config.color
+            };
             eprintln!(
-              "{}===> Recipe `{}` matches latest cache. Skipping...{}",
+              "{}===> Hash of recipe body of `{}` matches last run. Skipping...{}",
               color.prefix(),
               self.name,
               color.suffix()
