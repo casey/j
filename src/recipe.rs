@@ -163,11 +163,8 @@ impl<'src, D> Recipe<'src, D> {
       path_hash.update(context.search.justfile.as_os_str().as_encoded_bytes());
       let path_hash = &path_hash.finalize().to_hex()[..16];
 
-      dirs::cache_dir()
-        .ok_or(Error::CacheFileRead {
-          cache_filename: None,
-        })?
-        .join("justfiles")
+      project_dir
+        .join(".justcache")
         .join(format!("{project_name}-{path_hash}.json"))
     };
 
