@@ -177,11 +177,11 @@ impl<'src, D> Recipe<'src, D> {
           io_error,
         })
       })?;
-      serde_json::from_str(&file_contents).map_or_else(
-        // Ignore unknown versions or corrupted cache files
-        |_parse_error| Ok(JustfileCache::new(context.search)),
-        |serialized: JustfileCacheSerialized| serialized.try_into(),
-      )?
+      // Ignore newer versions, incompatible old versions or corrupted cache files
+      serde_json::from_str(&file_contents)
+        .or(Err(()))
+        .and_then(|serialized: JustfileCacheSerialized| serialized.try_into().or(Err(())))
+        .unwrap_or_else(|_| JustfileCache::new(context.search))
     };
 
     // TODO: Prevent double work/evaluating twice

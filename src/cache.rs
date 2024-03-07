@@ -45,7 +45,7 @@ impl From<JustfileCache> for JustfileCacheSerialized {
 }
 
 impl TryFrom<JustfileCacheSerialized> for JustfileCache {
-  type Error = Error<'static>;
+  type Error = ();
 
   fn try_from(value: JustfileCacheSerialized) -> Result<Self, Self::Error> {
     match value {
