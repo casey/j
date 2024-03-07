@@ -155,26 +155,23 @@ impl<'src, D> Recipe<'src, D> {
     context: &RecipeContext<'src, 'run>,
     mut evaluator: Evaluator<'src, 'run>,
   ) -> RunResult<'src, Option<(PathBuf, JustfileCache)>> {
-    let cache_filename = match &context.settings.cache_filename {
-      Some(cache_filename) => context.search.working_directory.join(cache_filename),
-      None => {
-        let project_dir = &context.search.working_directory;
-        let project_name = project_dir
-          .file_name()
-          .and_then(|name| name.to_str())
-          .unwrap_or("UNKNOWN_PROJECT");
-        let mut path_hash = blake3::Hasher::new();
-        path_hash.update(project_dir.as_os_str().as_bytes());
-        path_hash.update(context.search.justfile.as_os_str().as_bytes());
-        let path_hash = &path_hash.finalize().to_hex()[..16];
+    let cache_filename = {
+      let project_dir = &context.search.working_directory;
+      let project_name = project_dir
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("UNKNOWN_PROJECT");
+      let mut path_hash = blake3::Hasher::new();
+      path_hash.update(project_dir.as_os_str().as_bytes());
+      path_hash.update(context.search.justfile.as_os_str().as_bytes());
+      let path_hash = &path_hash.finalize().to_hex()[..16];
 
-        dirs::cache_dir()
-          .ok_or(Error::CacheFileRead {
-            cache_filename: None,
-          })?
-          .join("justfiles")
-          .join(format!("{project_name}-{path_hash}.json"))
-      }
+      dirs::cache_dir()
+        .ok_or(Error::CacheFileRead {
+          cache_filename: None,
+        })?
+        .join("justfiles")
+        .join(format!("{project_name}-{path_hash}.json"))
     };
 
     let mut cache = if !cache_filename.exists() {

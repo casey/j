@@ -8,7 +8,6 @@ pub(crate) const WINDOWS_POWERSHELL_ARGS: &[&str] = &["-NoLogo", "-Command"];
 #[derive(Debug, PartialEq, Serialize, Default)]
 pub(crate) struct Settings<'src> {
   pub(crate) allow_duplicate_recipes: bool,
-  pub(crate) cache_filename: Option<String>,
   pub(crate) dotenv_filename: Option<String>,
   pub(crate) dotenv_load: Option<bool>,
   pub(crate) dotenv_path: Option<PathBuf>,
@@ -31,9 +30,6 @@ impl<'src> Settings<'src> {
       match set {
         Setting::AllowDuplicateRecipes(allow_duplicate_recipes) => {
           settings.allow_duplicate_recipes = allow_duplicate_recipes;
-        }
-        Setting::CacheFilename(cache_filename) => {
-          settings.cache_filename = Some(cache_filename);
         }
         Setting::DotenvFilename(filename) => {
           settings.dotenv_filename = Some(filename);

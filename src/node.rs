@@ -281,10 +281,7 @@ impl<'src> Node<'src> for Set<'src> {
           set.push_mut(Tree::string(&argument.cooked));
         }
       }
-      Setting::CacheFilename(value)
-      | Setting::DotenvFilename(value)
-      | Setting::DotenvPath(value)
-      | Setting::Tempdir(value) => {
+      Setting::DotenvFilename(value) | Setting::DotenvPath(value) | Setting::Tempdir(value) => {
         set.push_mut(Tree::string(value));
       }
     }
