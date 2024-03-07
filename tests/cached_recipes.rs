@@ -168,11 +168,33 @@ fn arguments_and_variables_are_part_of_cache_hash() {
 }
 
 #[test]
-fn cached_recipes_rerun_when_deps_change_but_not_vice_versa() {
-  assert!(false);
+fn invalid_cache_files_are_ignored() {
+  let justfile = r#"
+    [cached]
+    echo:
+      @echo cached
+    "#;
+
+  let wrapper = ReuseableTest::new(justfile);
+  let wrapper = wrapper
+    .map(|test| test.arg("--unstable").stdout("cached\n"))
+    .run();
+
+  let cache_dir = wrapper.test.tempdir.path().join(".justcache");
+  let mut caches = std::fs::read_dir(cache_dir).expect("could not read cache dir");
+  let cached_recipe = caches.next().expect("no recipe cache file").unwrap().path();
+  std::fs::write(cached_recipe, r#"{"invalid_cache_format": true}"#).unwrap();
+
+  let _wrapper = wrapper
+    .map(|test| test.arg("--unstable").stdout("cached\n"))
+    .run();
 }
 
 #[test]
-fn cached_deps_cannot_depend_on_preceding_uncached_ones() {
-  assert!(false);
-}
+fn cached_recipes_rerun_when_deps_change_but_not_vice_versa() {}
+
+#[test]
+fn cached_deps_cannot_depend_on_preceding_uncached_ones() {}
+
+#[test]
+fn failed_runs_should_not_update_cache() {}

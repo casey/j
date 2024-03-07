@@ -171,14 +171,17 @@ impl<'src, D> Recipe<'src, D> {
     let mut cache = if !cache_filename.exists() {
       JustfileCache::new(context.search)
     } else {
-      fs::read_to_string(&cache_filename)
-        .or(Err(()))
-        .and_then(|cache| serde_json::from_str(&cache).or(Err(())))
-        .or_else(|_| {
-          Err(Error::CacheFileRead {
-            cache_filename: Some(cache_filename.clone()),
-          })
-        })?
+      let file_contents = fs::read_to_string(&cache_filename).or_else(|io_error| {
+        Err(Error::CacheFileRead {
+          cache_filename: cache_filename.clone(),
+          io_error,
+        })
+      })?;
+      serde_json::from_str(&file_contents).map_or_else(
+        // Ignore unknown versions or corrupted cache files
+        |_parse_error| Ok(JustfileCache::new(context.search)),
+        |serialized: JustfileCacheSerialized| serialized.try_into(),
+      )?
     };
 
     // TODO: Prevent double work/evaluating twice
@@ -207,6 +210,7 @@ impl<'src, D> Recipe<'src, D> {
     cache_filename: PathBuf,
     cache: JustfileCache,
   ) -> RunResult<'src, ()> {
+    let cache: JustfileCacheSerialized = cache.into();
     let cache = serde_json::to_string(&cache).or_else(|_| {
       Err(Error::Internal {
         message: format!("Failed to serialize cache: {cache:?}"),

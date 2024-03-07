@@ -18,7 +18,8 @@ pub(crate) enum Error<'src> {
     output_error: OutputError,
   },
   CacheFileRead {
-    cache_filename: Option<PathBuf>,
+    cache_filename: PathBuf,
+    io_error: io::Error,
   },
   CacheFileWrite {
     cache_filename: PathBuf,
@@ -274,11 +275,7 @@ impl<'src> ColorDisplay for Error<'src> {
           }?,
         OutputError::Utf8(utf8_error) => write!(f, "Backtick succeeded but stdout was not utf8: {utf8_error}")?,
       }
-      CacheFileRead {cache_filename} => match cache_filename {
-        Some(cache_filename) =>
-        write!(f, "Failed to read cache file: {}", cache_filename.display())?,
-        None => write!(f, "Failed to get default cache file")?,
-      }
+      CacheFileRead {cache_filename, io_error} => write!(f, "Failed to read cache file: {}\nio_error: {}", cache_filename.display(), io_error)?,
       CacheFileWrite{cache_filename, io_error} => write!(f, "Failed to write cache file ({}): {io_error}", cache_filename.display())?,
       ChooserInvoke { shell_binary, shell_arguments, chooser, io_error} => {
         let chooser = chooser.to_string_lossy();
