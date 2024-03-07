@@ -36,6 +36,21 @@ fn skipped_message<'run>(recipe_name: &str) -> String {
 }
 
 #[test]
+fn cached_recipes_are_unstable() {
+  let justfile = r#"
+    [cached]
+    echo:
+      @echo cached
+    "#;
+
+  Test::new()
+    .justfile(justfile)
+    .stderr("error: Cached recipes are currently unstable. Invoke `just` with the `--unstable` flag to enable unstable features.\n")
+    .status(EXIT_FAILURE)
+    .run();
+}
+
+#[test]
 fn cached_recipes_are_cached() {
   let justfile = r#"
     [cached]
@@ -44,9 +59,11 @@ fn cached_recipes_are_cached() {
     "#;
 
   let wrapper = ReuseableTest::new(justfile);
-  let wrapper = wrapper.map(|test| test.stdout("cached\n")).run();
+  let wrapper = wrapper
+    .map(|test| test.arg("--unstable").stdout("cached\n"))
+    .run();
   let _wrapper = wrapper
-    .map(|test| test.stderr(&skipped_message("echo")))
+    .map(|test| test.arg("--unstable").stderr(&skipped_message("echo")))
     .run();
 }
 
@@ -77,16 +94,26 @@ fn cached_recipes_are_independent() {
 
   let wrapper = ReuseableTest::new(justfile);
   let wrapper = wrapper
-    .map(|test| test.arg("echo1").stdout("cached1\n"))
+    .map(|test| test.arg("--unstable").arg("echo1").stdout("cached1\n"))
     .run();
   let wrapper = wrapper
-    .map(|test| test.arg("echo2").stdout("cached2\n"))
+    .map(|test| test.arg("--unstable").arg("echo2").stdout("cached2\n"))
     .run();
   let wrapper = wrapper
-    .map(|test| test.arg("echo1").stderr(&skipped_message("echo1")))
+    .map(|test| {
+      test
+        .arg("--unstable")
+        .arg("echo1")
+        .stderr(&skipped_message("echo1"))
+    })
     .run();
   let _wrapper = wrapper
-    .map(|test| test.arg("echo2").stderr(&skipped_message("echo2")))
+    .map(|test| {
+      test
+        .arg("--unstable")
+        .arg("echo2")
+        .stderr(&skipped_message("echo2"))
+    })
     .run();
 }
 
@@ -101,23 +128,39 @@ fn arguments_and_variables_are_part_of_cache_hash() {
 
   let wrapper = ReuseableTest::new(justfile);
   let wrapper = wrapper
-    .map(|test| test.args(["echo", "a"]).stdout("a1\n"))
+    .map(|test| test.arg("--unstable").args(["echo", "a"]).stdout("a1\n"))
     .run();
   let wrapper = wrapper
-    .map(|test| test.args(["echo", "a"]).stderr(&skipped_message("echo")))
+    .map(|test| {
+      test
+        .arg("--unstable")
+        .args(["echo", "a"])
+        .stderr(&skipped_message("echo"))
+    })
     .run();
   let wrapper = wrapper
-    .map(|test| test.args(["echo", "b"]).stdout("b1\n"))
+    .map(|test| test.arg("--unstable").args(["echo", "b"]).stdout("b1\n"))
     .run();
   let wrapper = wrapper
-    .map(|test| test.args(["echo", "b"]).stderr(&skipped_message("echo")))
+    .map(|test| {
+      test
+        .arg("--unstable")
+        .args(["echo", "b"])
+        .stderr(&skipped_message("echo"))
+    })
     .run();
   let wrapper = wrapper
-    .map(|test| test.args(["my-var=2", "echo", "b"]).stdout("b2\n"))
+    .map(|test| {
+      test
+        .arg("--unstable")
+        .args(["my-var=2", "echo", "b"])
+        .stdout("b2\n")
+    })
     .run();
   let _wrapper = wrapper
     .map(|test| {
       test
+        .arg("--unstable")
         .args(["my-var=2", "echo", "b"])
         .stderr(&skipped_message("echo"))
     })

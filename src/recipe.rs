@@ -250,6 +250,8 @@ impl<'src, D> Recipe<'src, D> {
     let updated_cache = if !self.cached() {
       None
     } else {
+      config.require_unstable("Cached recipes are currently unstable.")?;
+
       let evaluator = Evaluator::recipe_evaluator(config, dotenv, &scope, context.settings, search);
       match self.get_updated_cache_if_outdated(context, evaluator)? {
         None => {
