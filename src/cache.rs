@@ -11,8 +11,10 @@ pub(crate) enum JustfileCacheSerialized {
   Unstable1(JustfileCacheUnstable1),
 }
 
+pub(crate) type JustfileCacheUnstable1 = JustfileCache;
+
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct JustfileCacheUnstable1 {
+pub(crate) struct JustfileCache {
   /// Only serialized for user debugging
   pub(crate) justfile_path: PathBuf,
   /// Only serialized for user debugging
@@ -26,7 +28,6 @@ pub(crate) struct RecipeCache {
   pub(crate) body_hash: String,
 }
 
-pub(crate) type JustfileCache = JustfileCacheUnstable1;
 impl JustfileCache {
   pub(crate) fn new(search: &Search) -> Self {
     Self {
