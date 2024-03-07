@@ -155,34 +155,6 @@ impl<'src, D> Recipe<'src, D> {
     context: &RecipeContext<'src, 'run>,
     mut evaluator: Evaluator<'src, 'run>,
   ) -> RunResult<'src, Option<(PathBuf, JustfileCache)>> {
-    let find_backticks = self
-      .body
-      .iter()
-      .flat_map(|line| line.fragments.iter())
-      .filter_map(|fragment| match fragment {
-        Fragment::Interpolation { expression } => Some(expression),
-        _ => None,
-      })
-      .flat_map(|expression| expression.walk())
-      .filter_map(|sub_expression| match sub_expression {
-        Expression::Backtick { .. } => Some("a backtick expression".to_string()),
-        Expression::Call { thunk } => match thunk {
-          Thunk::Nullary { name, .. } => {
-            let name = name.lexeme();
-            (name == "uuid" || name == "just_pid").then(|| format!("a call to `{name}`"))
-          }
-          _ => None,
-        },
-        _ => None,
-      });
-
-    if let Some(describe_invalid) = find_backticks.into_iter().next() {
-      return Err(Error::InvalidCachedRecipe {
-        recipe: self.name(),
-        describe_invalid,
-      });
-    }
-
     let cache_filename = match &context.settings.cache_filename {
       Some(cache_filename) => context.search.working_directory.join(cache_filename),
       None => {
