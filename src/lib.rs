@@ -23,13 +23,12 @@ pub(crate) use {
     conditional_operator::ConditionalOperator, config::Config, config_error::ConfigError,
     count::Count, delimiter::Delimiter, dependency::Dependency, dump_format::DumpFormat,
     enclosure::Enclosure, error::Error, evaluator::Evaluator, expression::Expression,
-    expression_walker::ExpressionWalker, fragment::Fragment, function::Function,
-    function_context::FunctionContext, interrupt_guard::InterruptGuard,
-    interrupt_handler::InterruptHandler, item::Item, justfile::Justfile, keyed::Keyed,
-    keyword::Keyword, lexer::Lexer, line::Line, list::List, load_dotenv::load_dotenv,
-    loader::Loader, name::Name, namepath::Namepath, ordinal::Ordinal, output::output,
-    output_error::OutputError, parameter::Parameter, parameter_kind::ParameterKind, parser::Parser,
-    platform::Platform, platform_interface::PlatformInterface, position::Position,
+    fragment::Fragment, function::Function, function_context::FunctionContext,
+    interrupt_guard::InterruptGuard, interrupt_handler::InterruptHandler, item::Item,
+    justfile::Justfile, keyed::Keyed, keyword::Keyword, lexer::Lexer, line::Line, list::List,
+    load_dotenv::load_dotenv, loader::Loader, name::Name, namepath::Namepath, ordinal::Ordinal,
+    output::output, output_error::OutputError, parameter::Parameter, parameter_kind::ParameterKind,
+    parser::Parser, platform::Platform, platform_interface::PlatformInterface, position::Position,
     positional::Positional, ran::Ran, range_ext::RangeExt, recipe::Recipe,
     recipe_context::RecipeContext, recipe_resolver::RecipeResolver, scope::Scope, search::Search,
     search_config::SearchConfig, search_error::SearchError, set::Set, setting::Setting,
@@ -138,7 +137,6 @@ mod enclosure;
 mod error;
 mod evaluator;
 mod expression;
-mod expression_walker;
 mod fragment;
 mod function;
 mod function_context;
