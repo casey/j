@@ -1,9 +1,6 @@
 use {
   super::*,
-  std::{
-    os::unix::ffi::OsStrExt,
-    process::{ExitStatus, Stdio},
-  },
+  std::process::{ExitStatus, Stdio},
 };
 
 /// Return a `Error::Signal` if the process was terminated by a signal,
@@ -162,8 +159,8 @@ impl<'src, D> Recipe<'src, D> {
         .and_then(|name| name.to_str())
         .unwrap_or("UNKNOWN_PROJECT");
       let mut path_hash = blake3::Hasher::new();
-      path_hash.update(project_dir.as_os_str().as_bytes());
-      path_hash.update(context.search.justfile.as_os_str().as_bytes());
+      path_hash.update(project_dir.as_os_str().as_encoded_bytes());
+      path_hash.update(context.search.justfile.as_os_str().as_encoded_bytes());
       let path_hash = &path_hash.finalize().to_hex()[..16];
 
       dirs::cache_dir()
