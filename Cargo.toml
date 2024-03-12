@@ -1,6 +1,6 @@
 [package]
 name = "just"
-version = "1.24.0"
+version = "1.25.2"
 authors = ["Casey Rodarmor <casey@rodarmor.com>"]
 autotests = false
 categories = ["command-line-utilities", "development-tools"]
@@ -79,6 +79,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [profile.release]
 lto = true
+codegen-units = 1
 
 [[test]]
 name = "integration"

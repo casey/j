@@ -39,6 +39,9 @@ build:
 fmt:
   cargo fmt --all
 
+shellcheck:
+  shellcheck www/install.sh
+
 man:
   cargo build --features help4help2man
   help2man \

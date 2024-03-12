@@ -36,11 +36,16 @@ jobs:
         git diff --no-ext-diff --quiet --exit-code
         ./tests/completions/just.bash
 
-    - name: Check for Forbidden Words
+    - name: Install Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install ripgrep
-        ./bin/forbid
+        sudo apt-get install ripgrep shellcheck
+
+    - name: Check for Forbidden Words
+      run: ./bin/forbid
+
+    - name: Check Install Script
+      run: shellcheck www/install.sh
 
   pages:
     runs-on: ubuntu-latest

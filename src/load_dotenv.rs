@@ -17,7 +17,8 @@ pub(crate) fn load_dotenv(
     .as_ref()
     .or(settings.dotenv_path.as_ref());
 
-  if !settings.dotenv_load.unwrap_or(false) && dotenv_filename.is_none() && dotenv_path.is_none() {
+  if !settings.dotenv_load.unwrap_or_default() && dotenv_filename.is_none() && dotenv_path.is_none()
+  {
     return Ok(BTreeMap::new());
   }
 

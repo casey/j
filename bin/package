@@ -12,6 +12,10 @@ test -f Cargo.lock || cargo generate-lockfile
 echo "Installing rust toolchain for $TARGET..."
 rustup target add $TARGET
 
+if [[ $TARGET == aarch64-unknown-linux-musl ]]; then
+  export CC=aarch64-linux-gnu-gcc
+fi
+
 echo "Building just..."
 RUSTFLAGS="--deny warnings --codegen target-feature=+crt-static $TARGET_RUSTFLAGS" \
   cargo build --bin just --target $TARGET --release

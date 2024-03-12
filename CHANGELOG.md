@@ -1,6 +1,31 @@
 Changelog
 =========
 
+[1.25.2](https://github.com/casey/just/releases/tag/1.25.2) - 2024-03-10
+------------------------------------------------------------------------
+
+- Unpin ctrlc ([#1951](https://github.com/casey/just/pull/1951))
+
+[1.25.1](https://github.com/casey/just/releases/tag/1.25.1) - 2024-03-09
+------------------------------------------------------------------------
+
+### Misc
+- Pin ctrlc to version 3.1.1 ([#1945](https://github.com/casey/just/pull/1945))
+- Fix AArch64 release build error ([#1942](https://github.com/casey/just/pull/1942))
+
+[1.25.0](https://github.com/casey/just/releases/tag/1.25.0) - 2024-03-07
+------------------------------------------------------------------------
+
+### Added
+- Add `blake3` and `blake3_file` functions ([#1860](https://github.com/casey/just/pull/1860) by [tgross35](https://github.com/tgross35))
+
+### Misc
+- Fix readme typo ([#1936](https://github.com/casey/just/pull/1936) by [Justintime50](https://github.com/Justintime50))
+- Use unwrap_or_default ([#1928](https://github.com/casey/just/pull/1928))
+- Set codegen-units to 1 reduce release binary size ([#1920](https://github.com/casey/just/pull/1920) by [amarao](https://github.com/amarao))
+- Document openSUSE package ([#1918](https://github.com/casey/just/pull/1918) by [sfalken](https://github.com/sfalken))
+- Fix install.sh shellcheck warnings ([#1912](https://github.com/casey/just/pull/1912) by [tgross35](https://github.com/tgross35))
+
 [1.24.0](https://github.com/casey/just/releases/tag/1.24.0) - 2024-02-11
 ------------------------------------------------------------------------
 

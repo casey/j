@@ -51,7 +51,7 @@ fn ignore_recipe_comments_with_shell_setting() {
 }
 
 #[test]
-fn continuations_iwth_echo_comments_false() {
+fn continuations_with_echo_comments_false() {
   Test::new()
     .justfile(
       "
