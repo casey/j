@@ -4,6 +4,8 @@ use std::path::PathBuf;
 
 use super::*;
 
+/// The version of the justfile as it is on disk. Newer cache formats are added
+/// as new variants.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "version")]
 pub(crate) enum JustfileCacheSerialized {
@@ -13,6 +15,8 @@ pub(crate) enum JustfileCacheSerialized {
 
 pub(crate) type JustfileCacheUnstable1 = JustfileCache;
 
+/// The runtime cache format. It should be the intersection of all supported
+/// serialized versions, i.e. you can convert any supported version to this.
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct JustfileCache {
   /// Only serialized for user debugging
