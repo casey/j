@@ -152,35 +152,20 @@ impl<'src, D> Recipe<'src, D> {
     context: &RecipeContext<'src, 'run>,
     mut evaluator: Evaluator<'src, 'run>,
   ) -> RunResult<'src, Option<(PathBuf, JustfileCache)>> {
-    let cache_filename = {
-      let project_dir = &context.search.working_directory;
-      let project_name = project_dir
-        .file_name()
-        .and_then(|name| name.to_str())
-        .unwrap_or("UNKNOWN_PROJECT");
-      let mut path_hash = blake3::Hasher::new();
-      path_hash.update(project_dir.as_os_str().as_encoded_bytes());
-      path_hash.update(context.search.justfile.as_os_str().as_encoded_bytes());
-      let path_hash = &path_hash.finalize().to_hex()[..16];
-
-      project_dir
-        .join(".justcache")
-        .join(format!("{project_name}-{path_hash}.json"))
-    };
-
-    let mut cache = if !cache_filename.exists() {
+    let cache_file = &context.search.cache_file;
+    let mut cache = if !cache_file.exists() {
       JustfileCache::new(context.search)
     } else {
-      let file_contents = fs::read_to_string(&cache_filename).or_else(|io_error| {
+      let file_contents = fs::read_to_string(&cache_file).or_else(|io_error| {
         Err(Error::CacheFileRead {
-          cache_filename: cache_filename.clone(),
+          cache_filename: cache_file.clone(),
           io_error,
         })
       })?;
       // Ignore newer versions, incompatible old versions or corrupted cache files
       serde_json::from_str(&file_contents)
         .or(Err(()))
-        .and_then(|serialized: JustfileCacheSerialized| serialized.try_into().or(Err(())))
+        .and_then(|serialized: JustfileCacheSerialized| serialized.try_into())
         .unwrap_or_else(|_| JustfileCache::new(context.search))
     };
 
@@ -202,7 +187,7 @@ impl<'src, D> Recipe<'src, D> {
         body_hash: recipe_hash.to_string(),
       },
     );
-    Ok(Some((cache_filename, cache)))
+    Ok(Some((cache_file.clone(), cache)))
   }
 
   fn save_latest_cache(
