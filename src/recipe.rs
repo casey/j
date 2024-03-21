@@ -177,7 +177,7 @@ impl<'src, D> Recipe<'src, D> {
     scope: Scope<'src, 'run>,
     search: &'run Search,
     positional: &[String],
-  ) -> RunResult<'src, Option<(String, String)>> {
+  ) -> RunResult<'src, Option<String>> {
     let config = &context.config;
 
     let updated_hash = if !self.should_cache() {
@@ -228,7 +228,7 @@ impl<'src, D> Recipe<'src, D> {
       self.run_linewise(context, dotenv, &scope, positional, config, evaluator)?;
     }
 
-    Ok(updated_hash.and_then(|hash| Some((self.name.to_string(), hash))))
+    Ok(updated_hash)
   }
 
   fn run_linewise<'run>(

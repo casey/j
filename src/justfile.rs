@@ -284,7 +284,7 @@ impl<'src> Justfile<'src> {
         cache: &cache,
       };
 
-      Self::run_recipe(
+      let new_hashes = Self::run_recipe(
         &invocation
           .arguments
           .iter()
@@ -296,8 +296,8 @@ impl<'src> Justfile<'src> {
         &mut ran,
         invocation.recipe,
         search,
-        &mut recipes_hashes,
       )?;
+      recipes_hashes.extend(new_hashes);
     }
 
     for (name, body_hash) in recipes_hashes {
@@ -417,10 +417,10 @@ impl<'src> Justfile<'src> {
     ran: &mut Ran<'src>,
     recipe: &Recipe<'src>,
     search: &Search,
-    recipe_hashes: &mut Vec<(String, String)>,
-  ) -> RunResult<'src> {
+  ) -> RunResult<'src, HashMap<String, String>> {
+    let mut recipe_hashes = HashMap::new();
     if ran.has_run(&recipe.namepath, arguments) {
-      return Ok(());
+      return Ok(recipe_hashes);
     }
 
     if !context.config.yes && !recipe.confirm()? {
@@ -451,21 +451,14 @@ impl<'src> Justfile<'src> {
           .map(|argument| evaluator.evaluate_expression(argument))
           .collect::<RunResult<Vec<String>>>()?;
 
-        Self::run_recipe(
-          &arguments,
-          context,
-          dotenv,
-          ran,
-          recipe,
-          search,
-          recipe_hashes,
-        )?;
+        let new_hashes = Self::run_recipe(&arguments, context, dotenv, ran, recipe, search)?;
+        recipe_hashes.extend(new_hashes);
       }
     }
 
     let updated_hash = recipe.run(context, dotenv, scope.child(), search, &positional)?;
-    if let Some((name, hash)) = updated_hash {
-      recipe_hashes.push((name, hash));
+    if let Some(body_hash) = updated_hash {
+      recipe_hashes.insert(recipe.name.to_string(), body_hash);
     }
 
     if !context.config.no_dependencies {
@@ -478,20 +471,13 @@ impl<'src> Justfile<'src> {
           evaluated.push(evaluator.evaluate_expression(argument)?);
         }
 
-        Self::run_recipe(
-          &evaluated,
-          context,
-          dotenv,
-          &mut ran,
-          recipe,
-          search,
-          recipe_hashes,
-        )?;
+        let new_hashes = Self::run_recipe(&evaluated, context, dotenv, &mut ran, recipe, search)?;
+        recipe_hashes.extend(new_hashes);
       }
     }
 
     ran.ran(&recipe.namepath, arguments.to_vec());
-    Ok(())
+    Ok(recipe_hashes)
   }
 
   pub(crate) fn public_recipes(&self, source_order: bool) -> Vec<&Recipe<'src, Dependency>> {
