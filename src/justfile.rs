@@ -272,12 +272,16 @@ impl<'src> Justfile<'src> {
     }
 
     let mut ran = Ran::default();
+    let mut cache = JustfileCache::new(search)?;
+    let mut recipes_hashes = vec![];
+
     for invocation in invocations {
       let context = RecipeContext {
         settings: invocation.settings,
         config,
         scope: invocation.scope,
         search,
+        cache: &cache,
       };
 
       Self::run_recipe(
@@ -292,10 +296,15 @@ impl<'src> Justfile<'src> {
         &mut ran,
         invocation.recipe,
         search,
+        &mut recipes_hashes,
       )?;
     }
 
-    Ok(())
+    for (name, body_hash) in recipes_hashes {
+      cache.insert_recipe(name, body_hash);
+    }
+
+    cache.save(search)
   }
 
   pub(crate) fn get_alias(&self, name: &str) -> Option<&Alias<'src>> {
@@ -408,6 +417,7 @@ impl<'src> Justfile<'src> {
     ran: &mut Ran<'src>,
     recipe: &Recipe<'src>,
     search: &Search,
+    recipe_hashes: &mut Vec<(String, String)>,
   ) -> RunResult<'src> {
     if ran.has_run(&recipe.namepath, arguments) {
       return Ok(());
@@ -441,11 +451,22 @@ impl<'src> Justfile<'src> {
           .map(|argument| evaluator.evaluate_expression(argument))
           .collect::<RunResult<Vec<String>>>()?;
 
-        Self::run_recipe(&arguments, context, dotenv, ran, recipe, search)?;
+        Self::run_recipe(
+          &arguments,
+          context,
+          dotenv,
+          ran,
+          recipe,
+          search,
+          recipe_hashes,
+        )?;
       }
     }
 
-    recipe.run(context, dotenv, scope.child(), search, &positional)?;
+    let updated_hash = recipe.run(context, dotenv, scope.child(), search, &positional)?;
+    if let Some((name, hash)) = updated_hash {
+      recipe_hashes.push((name, hash));
+    }
 
     if !context.config.no_dependencies {
       let mut ran = Ran::default();
@@ -457,7 +478,15 @@ impl<'src> Justfile<'src> {
           evaluated.push(evaluator.evaluate_expression(argument)?);
         }
 
-        Self::run_recipe(&evaluated, context, dotenv, &mut ran, recipe, search)?;
+        Self::run_recipe(
+          &evaluated,
+          context,
+          dotenv,
+          &mut ran,
+          recipe,
+          search,
+          recipe_hashes,
+        )?;
       }
     }
 

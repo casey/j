@@ -33,12 +33,66 @@ pub(crate) struct RecipeCache {
 }
 
 impl JustfileCache {
-  pub(crate) fn new(search: &Search) -> Self {
+  fn new_empty(search: &Search) -> Self {
     Self {
       justfile_path: search.justfile.clone(),
       working_directory: search.working_directory.clone(),
       recipes: HashMap::new(),
     }
+  }
+
+  pub(crate) fn new<'run>(search: &Search) -> RunResult<'run, Self> {
+    let cache_file = &search.cache_file;
+    let this = if !cache_file.exists() {
+      Self::new_empty(search)
+    } else {
+      let file_contents = fs::read_to_string(&cache_file).or_else(|io_error| {
+        Err(Error::CacheFileRead {
+          cache_filename: cache_file.clone(),
+          io_error,
+        })
+      })?;
+      // Ignore newer versions, incompatible old versions or corrupted cache files
+      serde_json::from_str(&file_contents)
+        .or(Err(()))
+        .and_then(|serialized: JustfileCacheSerialized| serialized.try_into())
+        .unwrap_or_else(|_| Self::new_empty(search))
+    };
+    Ok(this)
+  }
+
+  pub(crate) fn insert_recipe(&mut self, name: String, body_hash: String) {
+    self.recipes.insert(name, RecipeCache { body_hash });
+  }
+
+  pub(crate) fn save<'run>(self, search: &Search) -> RunResult<'run, ()> {
+    let cache: JustfileCacheSerialized = self.into();
+    let cache = serde_json::to_string(&cache).or_else(|_| {
+      Err(Error::Internal {
+        message: format!("Failed to serialize cache: {cache:?}"),
+      })
+    })?;
+
+    search
+      .cache_file
+      .parent()
+      .ok_or_else(|| {
+        io::Error::new(
+          io::ErrorKind::Unsupported,
+          format!(
+            "Cannot create parent directory of {}",
+            search.cache_file.display()
+          ),
+        )
+      })
+      .and_then(|parent| fs::create_dir_all(parent))
+      .and_then(|_| fs::write(&search.cache_file, cache))
+      .or_else(|io_error| {
+        Err(Error::CacheFileWrite {
+          cache_filename: search.cache_file.clone(),
+          io_error,
+        })
+      })
   }
 }
 

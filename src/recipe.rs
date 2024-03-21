@@ -143,32 +143,15 @@ impl<'src, D> Recipe<'src, D> {
     self.attributes.contains(&Attribute::NoQuiet)
   }
 
-  fn cached(&self) -> bool {
+  fn should_cache(&self) -> bool {
     self.attributes.contains(&Attribute::Cached)
   }
 
-  fn get_updated_cache_if_outdated<'run>(
+  fn get_updated_hash_if_outdated<'run>(
     &self,
     context: &RecipeContext<'src, 'run>,
     mut evaluator: Evaluator<'src, 'run>,
-  ) -> RunResult<'src, Option<(PathBuf, JustfileCache)>> {
-    let cache_file = &context.search.cache_file;
-    let mut cache = if !cache_file.exists() {
-      JustfileCache::new(context.search)
-    } else {
-      let file_contents = fs::read_to_string(&cache_file).or_else(|io_error| {
-        Err(Error::CacheFileRead {
-          cache_filename: cache_file.clone(),
-          io_error,
-        })
-      })?;
-      // Ignore newer versions, incompatible old versions or corrupted cache files
-      serde_json::from_str(&file_contents)
-        .or(Err(()))
-        .and_then(|serialized: JustfileCacheSerialized| serialized.try_into())
-        .unwrap_or_else(|_| JustfileCache::new(context.search))
-    };
-
+  ) -> RunResult<'src, Option<String>> {
     // TODO: Prevent double work/evaluating twice
     let mut recipe_hash = blake3::Hasher::new();
     for line in &self.body {
@@ -176,51 +159,15 @@ impl<'src, D> Recipe<'src, D> {
     }
     let recipe_hash = recipe_hash.finalize().to_hex();
 
-    if let Some(previous_run) = cache.recipes.get(self.name()) {
+    let recipes = &context.cache.recipes;
+    let updated_hash = recipes.get(self.name()).and_then(|previous_run| {
       if previous_run.body_hash == recipe_hash.as_str() {
-        return Ok(None);
+        None
+      } else {
+        Some(recipe_hash.to_string())
       }
-    }
-    cache.recipes.insert(
-      self.name().to_string(),
-      RecipeCache {
-        body_hash: recipe_hash.to_string(),
-      },
-    );
-    Ok(Some((cache_file.clone(), cache)))
-  }
-
-  fn save_latest_cache(
-    &self,
-    cache_filename: PathBuf,
-    cache: JustfileCache,
-  ) -> RunResult<'src, ()> {
-    let cache: JustfileCacheSerialized = cache.into();
-    let cache = serde_json::to_string(&cache).or_else(|_| {
-      Err(Error::Internal {
-        message: format!("Failed to serialize cache: {cache:?}"),
-      })
-    })?;
-
-    cache_filename
-      .parent()
-      .ok_or_else(|| {
-        io::Error::new(
-          io::ErrorKind::Unsupported,
-          format!(
-            "Cannot create parent directory of {}",
-            cache_filename.display()
-          ),
-        )
-      })
-      .and_then(|parent| fs::create_dir_all(parent))
-      .and_then(|_| fs::write(&cache_filename, cache))
-      .or_else(|io_error| {
-        Err(Error::CacheFileWrite {
-          cache_filename,
-          io_error,
-        })
-      })
+    });
+    Ok(updated_hash)
   }
 
   pub(crate) fn run<'run>(
@@ -230,16 +177,17 @@ impl<'src, D> Recipe<'src, D> {
     scope: Scope<'src, 'run>,
     search: &'run Search,
     positional: &[String],
-  ) -> RunResult<'src, ()> {
+  ) -> RunResult<'src, Option<(String, String)>> {
     let config = &context.config;
 
-    let updated_cache = if !self.cached() {
+    let updated_hash = if !self.should_cache() {
       None
     } else {
       config.require_unstable("Cached recipes are currently unstable.")?;
 
       let evaluator = Evaluator::recipe_evaluator(config, dotenv, &scope, context.settings, search);
-      match self.get_updated_cache_if_outdated(context, evaluator)? {
+      match self.get_updated_hash_if_outdated(context, evaluator)? {
+        Some(hash) => Some(hash),
         None => {
           if config.dry_run
             || config.verbosity.loquacious()
@@ -257,9 +205,8 @@ impl<'src, D> Recipe<'src, D> {
               color.suffix()
             );
           }
-          return Ok(());
+          return Ok(None);
         }
-        Some(cache_info) => Some(cache_info),
       }
     };
 
@@ -281,11 +228,7 @@ impl<'src, D> Recipe<'src, D> {
       self.run_linewise(context, dotenv, &scope, positional, config, evaluator)?;
     }
 
-    if let Some((cache_filename, cache)) = updated_cache {
-      self.save_latest_cache(cache_filename, cache)
-    } else {
-      Ok(())
-    }
+    Ok(updated_hash.and_then(|hash| Some((self.name.to_string(), hash))))
   }
 
   fn run_linewise<'run>(

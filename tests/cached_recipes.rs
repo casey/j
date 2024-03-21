@@ -198,3 +198,9 @@ fn cached_deps_cannot_depend_on_preceding_uncached_ones() {}
 
 #[test]
 fn failed_runs_should_not_update_cache() {}
+
+#[test]
+fn recipes_should_be_cached_when_deps_run_before() {}
+
+#[test]
+fn recipes_should_be_cached_when_deps_run_after() {}
