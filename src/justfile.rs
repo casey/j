@@ -273,7 +273,7 @@ impl<'src> Justfile<'src> {
 
     let mut ran = Ran::default();
     let mut cache = JustfileCache::new(search)?;
-    let mut recipes_hashes = vec![];
+    let mut recipes_hashes = HashMap::new();
 
     for invocation in invocations {
       let context = RecipeContext {
@@ -457,11 +457,13 @@ impl<'src> Justfile<'src> {
     }
 
     let updated_hash = recipe.run(context, dotenv, scope.child(), search, &positional)?;
+    let recipe_hash_changed = updated_hash.is_some();
+
     if let Some(body_hash) = updated_hash {
       recipe_hashes.insert(recipe.name.to_string(), body_hash);
     }
 
-    if !context.config.no_dependencies {
+    if !context.config.no_dependencies && (!recipe.should_cache() || recipe_hash_changed) {
       let mut ran = Ran::default();
 
       for Dependency { recipe, arguments } in recipe.dependencies.iter().skip(recipe.priors) {

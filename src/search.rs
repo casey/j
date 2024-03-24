@@ -33,6 +33,7 @@ impl Search {
       cache_file,
     }
   }
+
   pub(crate) fn find(
     search_config: &SearchConfig,
     invocation_directory: &Path,

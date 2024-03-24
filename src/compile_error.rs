@@ -46,6 +46,13 @@ impl Display for CompileError<'_> {
         recipe_line.ordinal(),
       ),
       BacktickShebang => write!(f, "Backticks may not start with `#!`"),
+      CachedDependsOnUncached { cached, uncached } => {
+        write!(
+          f,
+          "Cached recipes cannot depend on preceding uncached ones, yet `{}` depends on `{}`",
+          cached, uncached
+        )
+      }
       CircularRecipeDependency { recipe, ref circle } => {
         if circle.len() == 2 {
           write!(f, "Recipe `{recipe}` depends on itself")

@@ -55,12 +55,12 @@ fn cached_recipes_are_cached() {
   let justfile = r#"
     [cached]
     echo:
-      @echo cached
+      @echo caching...
     "#;
 
   let wrapper = ReuseableTest::new(justfile);
   let wrapper = wrapper
-    .map(|test| test.arg("--unstable").stdout("cached\n"))
+    .map(|test| test.arg("--unstable").stdout("caching...\n"))
     .run();
   let _wrapper = wrapper
     .map(|test| test.arg("--unstable").stderr(&skipped_message("echo")))
@@ -70,8 +70,8 @@ fn cached_recipes_are_cached() {
 #[test]
 fn uncached_recipes_are_uncached() {
   let justfile = r#"
-    @echo:
-      echo uncached
+    echo:
+      @echo uncached
     "#;
 
   let wrapper = ReuseableTest::new(justfile);
@@ -82,11 +82,9 @@ fn uncached_recipes_are_uncached() {
 #[test]
 fn cached_recipes_are_independent() {
   let justfile = r#"
-
     [cached]
     echo1:
       @echo cached1
-
     [cached]
     echo2:
       @echo cached2
@@ -118,7 +116,7 @@ fn cached_recipes_are_independent() {
 }
 
 #[test]
-fn arguments_and_variables_are_part_of_cache_hash() {
+fn interpolated_values_are_part_of_cache_hash() {
   let justfile = r#"
     my-var := "1"
     [cached]
@@ -191,16 +189,138 @@ fn invalid_cache_files_are_ignored() {
 }
 
 #[test]
-fn cached_recipes_rerun_when_deps_change_but_not_vice_versa() {}
+fn cached_deps_cannot_depend_on_preceding_uncached_ones() {
+  let justfile = r#"
+    [cached]
+    cash-money: uncached
+    uncached:
+    "#;
+
+  let wrapper = ReuseableTest::new(justfile);
+  let _wrapper = wrapper
+    .map(|test| {
+      test
+        .arg("--unstable")
+        .stderr(unindent(r#"
+          error: Cached recipes cannot depend on preceding uncached ones, yet `cash-money` depends on `uncached`
+           ——▶ justfile:2:13
+            │
+          2 │ cash-money: uncached
+            │             ^^^^^^^^
+          "#))
+        .status(EXIT_FAILURE)
+    })
+    .run();
+}
 
 #[test]
-fn cached_deps_cannot_depend_on_preceding_uncached_ones() {}
+fn subsequent_deps_run_only_when_cached_recipe_runs() {
+  let justfile = r#"
+    [cached]
+    cash-money: && uncached
+      @echo cash money
+    uncached:
+      @echo uncached cleanup
+    "#;
+
+  let wrapper = ReuseableTest::new(justfile);
+  let wrapper = wrapper
+    .map(|test| {
+      test
+        .arg("--unstable")
+        .arg("cash-money")
+        .stdout("cash money\nuncached cleanup\n")
+    })
+    .run();
+  let _wrapper = wrapper
+    .map(|test| {
+      test
+        .arg("--unstable")
+        .arg("cash-money")
+        .stderr(skipped_message("cash-money"))
+    })
+    .run();
+}
 
 #[test]
-fn failed_runs_should_not_update_cache() {}
+fn cached_recipes_rerun_when_deps_change_but_not_vice_versa() {
+  let justfile = r#"
+    top-var := "default-top"
+    mid-var := "default-middle"
+    bot-var := "default-bottom"
+
+    [cached]
+    top: mid
+      @echo {{top-var}}
+    [cached]
+    mid: bot
+      @echo {{mid-var}}
+    [cached]
+    bot:
+      @echo {{bot-var}}
+    "#;
+
+  let wrapper = ReuseableTest::new(justfile);
+  let wrapper = wrapper
+    .map(|test| test.arg("--unstable").arg("bot").stdout("default-bottom\n"))
+    .run();
+  let wrapper = wrapper
+    .map(|test| {
+      test
+        .arg("--unstable")
+        .arg("top")
+        .stderr(skipped_message("bot"))
+        .stdout("default-middle\ndefault-top\n")
+    })
+    .run();
+
+  let wrapper = wrapper
+    .map(|test| {
+      test
+        .arg("--unstable")
+        .args(["bot-var=change-bottom", "top"])
+        .stdout("change-bottom\ndefault-middle\ndefault-top\n")
+    })
+    .run();
+
+  let _wrapper = wrapper
+    .map(|test| {
+      test
+        .arg("--unstable")
+        .args(["bot-var=change-bottom", "top-var=change-top", "top"])
+        .stderr([skipped_message("bot"), skipped_message("mid")].concat())
+        .stdout("change-top\n")
+    })
+    .run();
+}
 
 #[test]
-fn recipes_should_be_cached_when_deps_run_before() {}
+fn failed_runs_should_not_update_cache() {
+  let justfile = r#"
+    [cached]
+    exit EXIT_CODE:
+      @exit {{EXIT_CODE}}
+    "#;
 
-#[test]
-fn recipes_should_be_cached_when_deps_run_after() {}
+  let wrapper = ReuseableTest::new(justfile);
+  let wrapper = wrapper
+    .map(|test| test.arg("--unstable").args(["exit", "0"]))
+    .run();
+  let wrapper = wrapper
+    .map(|test| {
+      test
+        .arg("--unstable")
+        .args(["exit", "1"])
+        .stderr("error: Recipe `exit` failed on line 3 with exit code 1\n")
+        .status(EXIT_FAILURE)
+    })
+    .run();
+  let _wrapper = wrapper
+    .map(|test| {
+      test
+        .arg("--unstable")
+        .args(["exit", "0"])
+        .stderr(skipped_message("exit"))
+    })
+    .run();
+}
