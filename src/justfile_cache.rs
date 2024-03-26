@@ -4,19 +4,6 @@ use std::path::PathBuf;
 
 use super::*;
 
-/// The version of the justfile as it is on disk. Newer cache formats are added
-/// as new variants.
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "version")]
-pub(crate) enum JustfileCacheSerialized {
-  #[serde(rename = "unstable-1")]
-  Unstable1(JustfileCacheUnstable1),
-}
-
-pub(crate) type JustfileCacheUnstable1 = JustfileCache;
-
-/// The runtime cache format. It should be the intersection of all supported
-/// serialized versions, i.e. you can convert any supported version to this.
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct JustfileCache {
   /// Only serialized for user debugging
@@ -29,8 +16,10 @@ pub(crate) struct JustfileCache {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct RecipeCache {
+  /// The hash of the recipe body after evaluation
   pub(crate) body_hash: String,
   #[serde(skip)]
+  /// Has the hash changed this run. Needed for nested cached dependencies.
   pub(crate) hash_changed: bool,
 }
 
@@ -57,7 +46,6 @@ impl JustfileCache {
       // Ignore newer versions, incompatible old versions or corrupted cache files
       serde_json::from_str(&file_contents)
         .or(Err(()))
-        .and_then(|serialized: JustfileCacheSerialized| serialized.try_into())
         .unwrap_or_else(|_| Self::new_empty(search))
     };
     Ok(this)
@@ -73,11 +61,10 @@ impl JustfileCache {
     );
   }
 
-  pub(crate) fn save<'run>(self, search: &Search) -> RunResult<'run, ()> {
-    let cache: JustfileCacheSerialized = self.into();
-    let cache = serde_json::to_string(&cache).or_else(|_| {
+  pub(crate) fn save<'run>(&self, search: &Search) -> RunResult<'run, ()> {
+    let cache = serde_json::to_string(self).or_else(|_| {
       Err(Error::Internal {
-        message: format!("Failed to serialize cache: {cache:?}"),
+        message: format!("Failed to serialize cache: {self:?}"),
       })
     })?;
 
@@ -101,21 +88,5 @@ impl JustfileCache {
           io_error,
         })
       })
-  }
-}
-
-impl From<JustfileCache> for JustfileCacheSerialized {
-  fn from(value: JustfileCache) -> Self {
-    JustfileCacheSerialized::Unstable1(value)
-  }
-}
-
-impl TryFrom<JustfileCacheSerialized> for JustfileCache {
-  type Error = ();
-
-  fn try_from(value: JustfileCacheSerialized) -> Result<Self, Self::Error> {
-    match value {
-      JustfileCacheSerialized::Unstable1(unstable1) => Ok(unstable1),
-    }
   }
 }

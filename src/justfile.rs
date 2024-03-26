@@ -298,7 +298,7 @@ impl<'src> Justfile<'src> {
       )?;
     }
 
-    cache.into_inner().save(search)
+    return cache.borrow().save(search);
   }
 
   pub(crate) fn get_alias(&self, name: &str) -> Option<&Alias<'src>> {
