@@ -33,13 +33,15 @@ _just() {
 '--completions=[Print shell completion script for <SHELL>]: :(zsh bash fish powershell elvish)' \
 '-s+[Show information about <RECIPE>]: :_just_commands' \
 '--show=[Show information about <RECIPE>]: :_just_commands' \
-'(--dotenv-path)--dotenv-filename=[Search for environment file named <DOTENV-FILENAME> instead of `.env`]' \
-'--dotenv-path=[Load environment file at <DOTENV-PATH> instead of searching for one]' \
+'(-E --dotenv-path)--dotenv-filename=[Search for environment file named <DOTENV-FILENAME> instead of `.env`]' \
+'-E+[Load <DOTENV-PATH> as environment file instead of searching for one]' \
+'--dotenv-path=[Load <DOTENV-PATH> as environment file instead of searching for one]' \
 '--check[Run `--fmt` in '\''check'\'' mode. Exits with 0 if justfile is formatted correctly. Exits with 1 and prints a diff if formatting is required.]' \
 '--yes[Automatically confirm all recipes.]' \
 '(-q --quiet)-n[Print what just would do without doing it]' \
 '(-q --quiet)--dry-run[Print what just would do without doing it]' \
 '--highlight[Highlight echoed recipe lines in bold]' \
+'--no-aliases[Don'\''t show aliases in list]' \
 '--no-deps[Don'\''t run recipe dependencies]' \
 '--no-dotenv[Don'\''t load `.env` file]' \
 '--no-highlight[Don'\''t highlight echoed recipe lines in bold]' \

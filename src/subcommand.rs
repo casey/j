@@ -429,16 +429,18 @@ impl Subcommand {
   fn list(config: &Config, level: usize, justfile: &Justfile) {
     // Construct a target to alias map.
     let mut recipe_aliases: BTreeMap<&str, Vec<&str>> = BTreeMap::new();
-    for alias in justfile.aliases.values() {
-      if alias.is_private() {
-        continue;
-      }
+    if !config.no_aliases {
+      for alias in justfile.aliases.values() {
+        if alias.is_private() {
+          continue;
+        }
 
-      if recipe_aliases.contains_key(alias.target.name.lexeme()) {
-        let aliases = recipe_aliases.get_mut(alias.target.name.lexeme()).unwrap();
-        aliases.push(alias.name.lexeme());
-      } else {
-        recipe_aliases.insert(alias.target.name.lexeme(), vec![alias.name.lexeme()]);
+        if recipe_aliases.contains_key(alias.target.name.lexeme()) {
+          let aliases = recipe_aliases.get_mut(alias.target.name.lexeme()).unwrap();
+          aliases.push(alias.name.lexeme());
+        } else {
+          recipe_aliases.insert(alias.target.name.lexeme(), vec![alias.name.lexeme()]);
+        }
       }
     }
 

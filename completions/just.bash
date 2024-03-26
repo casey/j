@@ -31,7 +31,7 @@ _just() {
 
     case "${cmd}" in
         just)
-            opts=" -n -q -u -v -e -l -h -V -f -d -c -s  --check --yes --dry-run --highlight --no-deps --no-dotenv --no-highlight --quiet --shell-command --clear-shell-args --unsorted --unstable --verbose --changelog --choose --dump --edit --evaluate --fmt --init --list --summary --variables --help --version --chooser --color --command-color --dump-format --list-heading --list-prefix --justfile --set --shell --shell-arg --working-directory --command --completions --show --dotenv-filename --dotenv-path  <ARGUMENTS>... "
+            opts=" -n -q -u -v -e -l -h -V -f -d -c -s -E  --check --yes --dry-run --highlight --no-aliases --no-deps --no-dotenv --no-highlight --quiet --shell-command --clear-shell-args --unsorted --unstable --verbose --changelog --choose --dump --edit --evaluate --fmt --init --list --summary --variables --help --version --chooser --color --command-color --dump-format --list-heading --list-prefix --justfile --set --shell --shell-arg --working-directory --command --completions --show --dotenv-filename --dotenv-path  <ARGUMENTS>... "
                 if [[ ${cur} == -* ]] ; then
                     COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                     return 0
@@ -131,6 +131,10 @@ _just() {
                     return 0
                     ;;
                 --dotenv-path)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                    -E)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;

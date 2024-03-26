@@ -1588,7 +1588,7 @@ that requires confirmation.
 
 ```just
 [confirm]
-delete all:
+delete-all:
   rm -rf *
 ```
 

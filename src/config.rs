@@ -31,6 +31,7 @@ pub(crate) struct Config {
   pub(crate) list_heading: String,
   pub(crate) list_prefix: String,
   pub(crate) load_dotenv: bool,
+  pub(crate) no_aliases: bool,
   pub(crate) no_dependencies: bool,
   pub(crate) search_config: SearchConfig,
   pub(crate) shell: Option<String>,
@@ -103,6 +104,7 @@ mod arg {
   pub(crate) const JUSTFILE: &str = "JUSTFILE";
   pub(crate) const LIST_HEADING: &str = "LIST-HEADING";
   pub(crate) const LIST_PREFIX: &str = "LIST-PREFIX";
+  pub(crate) const NO_ALIASES: &str = "NO-ALIASES";
   pub(crate) const NO_DEPS: &str = "NO-DEPS";
   pub(crate) const NO_DOTENV: &str = "NO-DOTENV";
   pub(crate) const NO_HIGHLIGHT: &str = "NO-HIGHLIGHT";
@@ -214,6 +216,11 @@ impl Config {
           .help("Print <TEXT> before each list item")
           .value_name("TEXT")
           .takes_value(true),
+      )
+      .arg(
+        Arg::with_name(arg::NO_ALIASES)
+          .long("no-aliases")
+          .help("Don't show aliases in list")
       )
       .arg (
         Arg::with_name(arg::NO_DEPS)
@@ -395,8 +402,9 @@ impl Config {
       )
       .arg(
         Arg::with_name(arg::DOTENV_PATH)
+          .short("E")
           .long("dotenv-path")
-          .help("Load environment file at <DOTENV-PATH> instead of searching for one")
+          .help("Load <DOTENV-PATH> as environment file instead of searching for one")
           .takes_value(true),
       )
       .group(ArgGroup::with_name("SUBCOMMAND").args(cmd::ALL))
@@ -658,6 +666,7 @@ impl Config {
         .unwrap_or("    ")
         .to_owned(),
       load_dotenv: !matches.is_present(arg::NO_DOTENV),
+      no_aliases: matches.is_present(arg::NO_ALIASES),
       no_dependencies: matches.is_present(arg::NO_DEPS),
       search_config,
       shell: matches.value_of(arg::SHELL).map(str::to_owned),

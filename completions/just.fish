@@ -50,11 +50,12 @@ complete -c just -n "__fish_use_subcommand" -s c -l command -d 'Run an arbitrary
 complete -c just -n "__fish_use_subcommand" -l completions -d 'Print shell completion script for <SHELL>' -r -f -a "zsh bash fish powershell elvish"
 complete -c just -n "__fish_use_subcommand" -s s -l show -d 'Show information about <RECIPE>'
 complete -c just -n "__fish_use_subcommand" -l dotenv-filename -d 'Search for environment file named <DOTENV-FILENAME> instead of `.env`'
-complete -c just -n "__fish_use_subcommand" -l dotenv-path -d 'Load environment file at <DOTENV-PATH> instead of searching for one'
+complete -c just -n "__fish_use_subcommand" -s E -l dotenv-path -d 'Load <DOTENV-PATH> as environment file instead of searching for one'
 complete -c just -n "__fish_use_subcommand" -l check -d 'Run `--fmt` in \'check\' mode. Exits with 0 if justfile is formatted correctly. Exits with 1 and prints a diff if formatting is required.'
 complete -c just -n "__fish_use_subcommand" -l yes -d 'Automatically confirm all recipes.'
 complete -c just -n "__fish_use_subcommand" -s n -l dry-run -d 'Print what just would do without doing it'
 complete -c just -n "__fish_use_subcommand" -l highlight -d 'Highlight echoed recipe lines in bold'
+complete -c just -n "__fish_use_subcommand" -l no-aliases -d 'Don\'t show aliases in list'
 complete -c just -n "__fish_use_subcommand" -l no-deps -d 'Don\'t run recipe dependencies'
 complete -c just -n "__fish_use_subcommand" -l no-dotenv -d 'Don\'t load `.env` file'
 complete -c just -n "__fish_use_subcommand" -l no-highlight -d 'Don\'t highlight echoed recipe lines in bold'
