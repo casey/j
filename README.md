@@ -1503,6 +1503,7 @@ Recipes may be annotated with attributes that change their behavior.
 | Name | Description |
 |------|-------------|
 | `[confirm]`<sup>1.17.0</sup> | Require confirmation prior to executing recipe. |
+| `[cached]`<sup>TODO!</sup> | See [Cached Recipes](#cached-recipes) |
 | `[confirm("prompt")]`<sup>1.23.0</sup> | Require confirmation prior to executing recipe with a custom prompt. |
 | `[linux]`<sup>1.8.0</sup> | Enable recipe on Linux. |
 | `[macos]`<sup>1.8.0</sup> | Enable recipe on MacOS. |
@@ -2486,6 +2487,25 @@ polyglot: python js perl sh ruby
 ```
 
 Run `just --help` to see all the options.
+
+### Cached Recipes
+
+Cached recipes only run when the recipe body changes, where the body is compared
+*after `{{interpolations}}` are evaluated*. This gives you fine control for when
+a recipe should rerun. **Note: This is currently an unstable feature and
+requires `--unstable`**.
+
+```just
+[cached]
+build:
+  @# This only runs when the hash of the file changes {{sha256_file("input.c")}}
+  gcc input.c -o output
+
+[cached]
+bad-example:
+  @# This will never rerun since the body never changes
+  gcc input.c -o output
+```
 
 ### Private Recipes
 
