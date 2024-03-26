@@ -30,6 +30,8 @@ pub(crate) struct JustfileCache {
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct RecipeCache {
   pub(crate) body_hash: String,
+  #[serde(skip)]
+  pub(crate) hash_changed: bool,
 }
 
 impl JustfileCache {
@@ -62,7 +64,13 @@ impl JustfileCache {
   }
 
   pub(crate) fn insert_recipe(&mut self, name: String, body_hash: String) {
-    self.recipes.insert(name, RecipeCache { body_hash });
+    self.recipes.insert(
+      name,
+      RecipeCache {
+        body_hash,
+        hash_changed: true,
+      },
+    );
   }
 
   pub(crate) fn save<'run>(self, search: &Search) -> RunResult<'run, ()> {

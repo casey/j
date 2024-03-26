@@ -160,15 +160,35 @@ impl<'src> Recipe<'src, Dependency<'src>> {
       recipe_hash.update(evaluator.evaluate_line(line, false)?.as_bytes());
     }
     let recipe_hash = recipe_hash.finalize().to_hex();
+    let recipes = &context.cache.borrow().recipes;
 
-    let recipes = &context.cache.recipes;
-    let updated_hash = recipes.get(self.name()).map_or_else(
-      || Some(recipe_hash.to_string()),
+    recipes.get(self.name()).map_or_else(
+      || Ok(Some(recipe_hash.to_string())),
       |previous_run| {
-        (previous_run.body_hash != recipe_hash.as_str()).then(|| recipe_hash.to_string())
+        let have_deps_changed = self
+          .dependencies
+          .iter()
+          .take(self.priors)
+          .map(|dep| {
+            recipes
+              .get(dep.recipe.name())
+              .and_then(|previous_run| Some(previous_run.hash_changed))
+              .ok_or_else(|| {
+                Error::internal(format!(
+                  "prior dependency `{}` did not run before current recipe `{}`",
+                  dep.recipe.name, self.name
+                ))
+              })
+          })
+          .collect::<Result<Vec<bool>, Error>>()?;
+
+        if have_deps_changed.iter().any(|x| *x) || previous_run.body_hash != recipe_hash.as_str() {
+          Ok(Some(recipe_hash.to_string()))
+        } else {
+          Ok(None)
+        }
       },
-    );
-    Ok(updated_hash)
+    )
   }
 
   pub(crate) fn run<'run>(

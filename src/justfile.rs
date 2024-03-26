@@ -1,4 +1,4 @@
-use {super::*, serde::Serialize};
+use {super::*, serde::Serialize, std::cell::RefCell};
 
 #[derive(Debug)]
 struct Invocation<'src: 'run, 'run> {
@@ -272,8 +272,7 @@ impl<'src> Justfile<'src> {
     }
 
     let mut ran = Ran::default();
-    let mut cache = JustfileCache::new(search)?;
-    let mut recipes_hashes = HashMap::new();
+    let cache = RefCell::new(JustfileCache::new(search)?);
 
     for invocation in invocations {
       let context = RecipeContext {
@@ -284,7 +283,7 @@ impl<'src> Justfile<'src> {
         cache: &cache,
       };
 
-      let new_hashes = Self::run_recipe(
+      Self::run_recipe(
         &invocation
           .arguments
           .iter()
@@ -297,14 +296,9 @@ impl<'src> Justfile<'src> {
         invocation.recipe,
         search,
       )?;
-      recipes_hashes.extend(new_hashes);
     }
 
-    for (name, body_hash) in recipes_hashes {
-      cache.insert_recipe(name, body_hash);
-    }
-
-    cache.save(search)
+    cache.into_inner().save(search)
   }
 
   pub(crate) fn get_alias(&self, name: &str) -> Option<&Alias<'src>> {
@@ -417,10 +411,9 @@ impl<'src> Justfile<'src> {
     ran: &mut Ran<'src>,
     recipe: &Recipe<'src>,
     search: &Search,
-  ) -> RunResult<'src, HashMap<String, String>> {
-    let mut recipe_hashes = HashMap::new();
+  ) -> RunResult<'src, ()> {
     if ran.has_run(&recipe.namepath, arguments) {
-      return Ok(recipe_hashes);
+      return Ok(());
     }
 
     if !context.config.yes && !recipe.confirm()? {
@@ -451,8 +444,7 @@ impl<'src> Justfile<'src> {
           .map(|argument| evaluator.evaluate_expression(argument))
           .collect::<RunResult<Vec<String>>>()?;
 
-        let new_hashes = Self::run_recipe(&arguments, context, dotenv, ran, recipe, search)?;
-        recipe_hashes.extend(new_hashes);
+        Self::run_recipe(&arguments, context, dotenv, ran, recipe, search)?;
       }
     }
 
@@ -460,7 +452,10 @@ impl<'src> Justfile<'src> {
     let recipe_hash_changed = updated_hash.is_some();
 
     if let Some(body_hash) = updated_hash {
-      recipe_hashes.insert(recipe.name.to_string(), body_hash);
+      context
+        .cache
+        .borrow_mut()
+        .insert_recipe(recipe.name.to_string(), body_hash);
     }
 
     if !context.config.no_dependencies && (!recipe.should_cache() || recipe_hash_changed) {
@@ -473,13 +468,12 @@ impl<'src> Justfile<'src> {
           evaluated.push(evaluator.evaluate_expression(argument)?);
         }
 
-        let new_hashes = Self::run_recipe(&evaluated, context, dotenv, &mut ran, recipe, search)?;
-        recipe_hashes.extend(new_hashes);
+        Self::run_recipe(&evaluated, context, dotenv, &mut ran, recipe, search)?;
       }
     }
 
     ran.ran(&recipe.namepath, arguments.to_vec());
-    Ok(recipe_hashes)
+    Ok(())
   }
 
   pub(crate) fn public_recipes(&self, source_order: bool) -> Vec<&Recipe<'src, Dependency>> {
