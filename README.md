@@ -2492,8 +2492,9 @@ Run `just --help` to see all the options.
 
 Cached recipes only run when the recipe body changes, where the body is compared
 *after `{{interpolations}}` are evaluated*. This gives you fine control for when
-a recipe should rerun. **Note: This is currently an unstable feature and
-requires `--unstable`**.
+a recipe should rerun. It is recommended you add `.justcache/` to your
+`.gitignore`. **Note: This is currently an unstable feature and requires
+`--unstable`**.
 
 ```just
 [cached]
