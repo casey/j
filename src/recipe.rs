@@ -146,7 +146,9 @@ impl<'src, D> Recipe<'src, D> {
   pub(crate) fn should_cache(&self) -> bool {
     self.attributes.contains(&Attribute::Cached)
   }
+}
 
+impl<'src> Recipe<'src, Dependency<'src>> {
   fn get_updated_hash_if_outdated<'run>(
     &self,
     context: &RecipeContext<'src, 'run>,
