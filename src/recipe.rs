@@ -160,7 +160,7 @@ impl<'src> Recipe<'src, Dependency<'src>> {
       recipe_hash.update(evaluator.evaluate_line(line, false)?.as_bytes());
     }
     let recipe_hash = recipe_hash.finalize().to_hex();
-    let recipes = &context.cache.borrow().recipes;
+    let recipes = &context.cache.recipes;
 
     recipes.get(self.name()).map_or_else(
       || Ok(Some(recipe_hash.to_string())),

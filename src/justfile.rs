@@ -1,4 +1,4 @@
-use {super::*, serde::Serialize, std::cell::RefCell};
+use {super::*, serde::Serialize};
 
 #[derive(Debug)]
 struct Invocation<'src: 'run, 'run> {
@@ -272,15 +272,15 @@ impl<'src> Justfile<'src> {
     }
 
     let mut ran = Ran::default();
-    let cache = RefCell::new(JustfileCache::new(search)?);
+    let mut cache = JustfileCache::new(search)?;
 
     for invocation in invocations {
-      let context = RecipeContext {
+      let mut context = RecipeContext {
         settings: invocation.settings,
         config,
         scope: invocation.scope,
         search,
-        cache: &cache,
+        cache: &mut cache,
       };
 
       Self::run_recipe(
@@ -290,7 +290,7 @@ impl<'src> Justfile<'src> {
           .copied()
           .map(str::to_string)
           .collect::<Vec<String>>(),
-        &context,
+        &mut context,
         &dotenv,
         &mut ran,
         invocation.recipe,
@@ -298,7 +298,7 @@ impl<'src> Justfile<'src> {
       )?;
     }
 
-    return cache.borrow().save(search);
+    return cache.save(search);
   }
 
   pub(crate) fn get_alias(&self, name: &str) -> Option<&Alias<'src>> {
@@ -406,7 +406,7 @@ impl<'src> Justfile<'src> {
 
   fn run_recipe(
     arguments: &[String],
-    context: &RecipeContext<'src, '_>,
+    context: &mut RecipeContext<'src, '_>,
     dotenv: &BTreeMap<String, String>,
     ran: &mut Ran<'src>,
     recipe: &Recipe<'src>,
@@ -454,7 +454,6 @@ impl<'src> Justfile<'src> {
     if let Some(body_hash) = updated_hash {
       context
         .cache
-        .borrow_mut()
         .insert_recipe(recipe.name.to_string(), body_hash);
     }
 
