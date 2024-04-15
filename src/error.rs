@@ -409,7 +409,7 @@ impl<'src> ColorDisplay for Error<'src> {
       }
       TmpdirIo { recipe, io_error } => {
         write!(f, "Recipe `{recipe}` could not be run because of an IO error while trying to create a temporary \
-                   directory or write a file to that directory`:{io_error}")?;
+                   directory or write a file to that directory: {io_error}")?;
       }
       Unknown { recipe, line_number} => {
         if let Some(n) = line_number {
