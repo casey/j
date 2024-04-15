@@ -49,8 +49,7 @@ impl Display for CompileError<'_> {
       CachedDependsOnUncached { cached, uncached } => {
         write!(
           f,
-          "Cached recipes cannot depend on preceding uncached ones, yet `{}` depends on `{}`",
-          cached, uncached
+          "Cached recipes cannot depend on preceding uncached ones, yet `{cached}` depends on `{uncached}`",
         )
       }
       CircularRecipeDependency { recipe, ref circle } => {

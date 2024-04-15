@@ -28,7 +28,7 @@ impl ReuseableTest {
   }
 }
 
-fn skipped_message<'run>(recipe_name: &str) -> String {
+fn skipped_message(recipe_name: &str) -> String {
   format!(
     "===> Hash of recipe body of `{}` matches last run. Skipping...\n",
     recipe_name
@@ -63,7 +63,7 @@ fn cached_recipes_are_cached() {
     .map(|test| test.arg("--unstable").stdout("caching...\n"))
     .run();
   let _wrapper = wrapper
-    .map(|test| test.arg("--unstable").stderr(&skipped_message("echo")))
+    .map(|test| test.arg("--unstable").stderr(skipped_message("echo")))
     .run();
 }
 
@@ -102,7 +102,7 @@ fn cached_recipes_are_independent() {
       test
         .arg("--unstable")
         .arg("echo1")
-        .stderr(&skipped_message("echo1"))
+        .stderr(skipped_message("echo1"))
     })
     .run();
   let _wrapper = wrapper
@@ -110,7 +110,7 @@ fn cached_recipes_are_independent() {
       test
         .arg("--unstable")
         .arg("echo2")
-        .stderr(&skipped_message("echo2"))
+        .stderr(skipped_message("echo2"))
     })
     .run();
 }
@@ -133,7 +133,7 @@ fn interpolated_values_are_part_of_cache_hash() {
       test
         .arg("--unstable")
         .args(["echo", "a"])
-        .stderr(&skipped_message("echo"))
+        .stderr(skipped_message("echo"))
     })
     .run();
   let wrapper = wrapper
@@ -144,7 +144,7 @@ fn interpolated_values_are_part_of_cache_hash() {
       test
         .arg("--unstable")
         .args(["echo", "b"])
-        .stderr(&skipped_message("echo"))
+        .stderr(skipped_message("echo"))
     })
     .run();
   let wrapper = wrapper
@@ -160,7 +160,7 @@ fn interpolated_values_are_part_of_cache_hash() {
       test
         .arg("--unstable")
         .args(["my-var=2", "echo", "b"])
-        .stderr(&skipped_message("echo"))
+        .stderr(skipped_message("echo"))
     })
     .run();
 }

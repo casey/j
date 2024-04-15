@@ -1503,7 +1503,7 @@ Recipes may be annotated with attributes that change their behavior.
 | Name | Description |
 |------|-------------|
 | `[confirm]`<sup>1.17.0</sup> | Require confirmation prior to executing recipe. |
-| `[cached]`<sup>TODO!</sup> | See [Cached Recipes](#cached-recipes) |
+| `[cached]`<sup>Latest</sup> | See [Cached Recipes](#cached-recipes) |
 | `[confirm("prompt")]`<sup>1.23.0</sup> | Require confirmation prior to executing recipe with a custom prompt. |
 | `[linux]`<sup>1.8.0</sup> | Enable recipe on Linux. |
 | `[macos]`<sup>1.8.0</sup> | Enable recipe on MacOS. |

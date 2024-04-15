@@ -34,19 +34,18 @@ impl JustfileCache {
 
   pub(crate) fn new<'run>(search: &Search) -> RunResult<'run, Self> {
     let cache_file = &search.cache_file;
-    let this = if !cache_file.exists() {
-      Self::new_empty(search)
-    } else {
-      let file_contents = fs::read_to_string(&cache_file).or_else(|io_error| {
-        Err(Error::CacheFileRead {
+    let this = if cache_file.exists() {
+      let file_contents =
+        fs::read_to_string(cache_file).map_err(|io_error| Error::CacheFileRead {
           cache_filename: cache_file.clone(),
           io_error,
-        })
-      })?;
+        })?;
       // Ignore newer versions, incompatible old versions or corrupted cache files
       serde_json::from_str(&file_contents)
         .or(Err(()))
-        .unwrap_or_else(|_| Self::new_empty(search))
+        .unwrap_or_else(|()| Self::new_empty(search))
+    } else {
+      Self::new_empty(search)
     };
     Ok(this)
   }
@@ -62,10 +61,8 @@ impl JustfileCache {
   }
 
   pub(crate) fn save<'run>(&self, search: &Search) -> RunResult<'run, ()> {
-    let cache = serde_json::to_string(self).or_else(|_| {
-      Err(Error::Internal {
-        message: format!("Failed to serialize cache: {self:?}"),
-      })
+    let cache = serde_json::to_string(self).map_err(|_| Error::Internal {
+      message: format!("Failed to serialize cache: {self:?}"),
     })?;
 
     search
@@ -80,13 +77,11 @@ impl JustfileCache {
           ),
         )
       })
-      .and_then(|parent| fs::create_dir_all(parent))
-      .and_then(|_| fs::write(&search.cache_file, cache))
-      .or_else(|io_error| {
-        Err(Error::CacheFileWrite {
-          cache_filename: search.cache_file.clone(),
-          io_error,
-        })
+      .and_then(fs::create_dir_all)
+      .and_then(|()| fs::write(&search.cache_file, cache))
+      .map_err(|io_error| Error::CacheFileWrite {
+        cache_filename: search.cache_file.clone(),
+        io_error,
       })
   }
 }

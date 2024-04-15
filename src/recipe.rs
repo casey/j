@@ -154,7 +154,6 @@ impl<'src> Recipe<'src, Dependency<'src>> {
     context: &RecipeContext<'src, 'run>,
     mut evaluator: Evaluator<'src, 'run>,
   ) -> RunResult<'src, Option<String>> {
-    // TODO: Prevent double work/evaluating twice
     let mut recipe_hash = blake3::Hasher::new();
     for line in &self.body {
       recipe_hash.update(evaluator.evaluate_line(line, false)?.as_bytes());
@@ -172,7 +171,7 @@ impl<'src> Recipe<'src, Dependency<'src>> {
           .map(|dep| {
             recipes
               .get(dep.recipe.name())
-              .and_then(|previous_run| Some(previous_run.hash_changed))
+              .map(|previous_run| previous_run.hash_changed)
               .ok_or_else(|| {
                 Error::internal(format!(
                   "prior dependency `{}` did not run before current recipe `{}`",
@@ -201,34 +200,34 @@ impl<'src> Recipe<'src, Dependency<'src>> {
   ) -> RunResult<'src, Option<String>> {
     let config = &context.config;
 
-    let updated_hash = if !self.should_cache() {
-      None
-    } else {
+    let updated_hash = if self.should_cache() {
       config.require_unstable("Cached recipes are currently unstable.")?;
 
       let evaluator = Evaluator::recipe_evaluator(config, dotenv, &scope, context.settings, search);
-      match self.get_updated_hash_if_outdated(context, evaluator)? {
-        Some(hash) => Some(hash),
-        None => {
-          if config.dry_run
-            || config.verbosity.loquacious()
-            || !((context.settings.quiet && !self.no_quiet()) || config.verbosity.quiet())
-          {
-            let color = if config.highlight {
-              config.color.command(config.command_color)
-            } else {
-              config.color
-            };
-            eprintln!(
-              "{}===> Hash of recipe body of `{}` matches last run. Skipping...{}",
-              color.prefix(),
-              self.name,
-              color.suffix()
-            );
-          }
-          return Ok(None);
+
+      let hash = self.get_updated_hash_if_outdated(context, evaluator)?;
+      if hash.is_none() {
+        if config.dry_run
+          || config.verbosity.loquacious()
+          || !((context.settings.quiet && !self.no_quiet()) || config.verbosity.quiet())
+        {
+          let color = if config.highlight {
+            config.color.command(config.command_color)
+          } else {
+            config.color
+          };
+          eprintln!(
+            "{}===> Hash of recipe body of `{}` matches last run. Skipping...{}",
+            color.prefix(),
+            self.name,
+            color.suffix()
+          );
         }
+        return Ok(None);
       }
+      hash
+    } else {
+      None
     };
 
     if config.verbosity.loquacious() {
