@@ -7,9 +7,33 @@ const PROJECT_ROOT_CHILDREN: &[&str] = &[".bzr", ".git", ".hg", ".svn", "_darcs"
 pub(crate) struct Search {
   pub(crate) justfile: PathBuf,
   pub(crate) working_directory: PathBuf,
+  pub(crate) cache_file: PathBuf,
 }
 
 impl Search {
+  fn new(justfile: PathBuf, working_directory: PathBuf) -> Self {
+    let cache_file = {
+      let project_name = working_directory
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("UNKNOWN_PROJECT");
+      let mut path_hash = blake3::Hasher::new();
+      path_hash.update(working_directory.as_os_str().as_encoded_bytes());
+      path_hash.update(justfile.as_os_str().as_encoded_bytes());
+      let path_hash = &path_hash.finalize().to_hex()[..16];
+
+      working_directory
+        .join(".justcache")
+        .join(format!("{project_name}-{path_hash}.json"))
+    };
+
+    Self {
+      justfile,
+      working_directory,
+      cache_file,
+    }
+  }
+
   pub(crate) fn find(
     search_config: &SearchConfig,
     invocation_directory: &Path,
@@ -23,28 +47,22 @@ impl Search {
 
         let working_directory = Self::working_directory_from_justfile(&justfile)?;
 
-        Ok(Self {
-          justfile,
-          working_directory,
-        })
+        Ok(Self::new(justfile, working_directory))
       }
       SearchConfig::WithJustfile { justfile } => {
         let justfile = Self::clean(invocation_directory, justfile);
 
         let working_directory = Self::working_directory_from_justfile(&justfile)?;
 
-        Ok(Self {
-          justfile,
-          working_directory,
-        })
+        Ok(Self::new(justfile, working_directory))
       }
       SearchConfig::WithJustfileAndWorkingDirectory {
         justfile,
         working_directory,
-      } => Ok(Self {
-        justfile: Self::clean(invocation_directory, justfile),
-        working_directory: Self::clean(invocation_directory, working_directory),
-      }),
+      } => Ok(Self::new(
+        Self::clean(invocation_directory, justfile),
+        Self::clean(invocation_directory, working_directory),
+      )),
     }
   }
 
@@ -53,10 +71,7 @@ impl Search {
 
     let working_directory = Self::working_directory_from_justfile(&justfile)?;
 
-    Ok(Self {
-      justfile,
-      working_directory,
-    })
+    Ok(Self::new(justfile, working_directory))
   }
 
   pub(crate) fn init(
@@ -69,10 +84,7 @@ impl Search {
 
         let justfile = working_directory.join(DEFAULT_JUSTFILE_NAME);
 
-        Ok(Self {
-          justfile,
-          working_directory,
-        })
+        Ok(Self::new(justfile, working_directory))
       }
 
       SearchConfig::FromSearchDirectory { search_directory } => {
@@ -82,10 +94,7 @@ impl Search {
 
         let justfile = working_directory.join(DEFAULT_JUSTFILE_NAME);
 
-        Ok(Self {
-          justfile,
-          working_directory,
-        })
+        Ok(Self::new(justfile, working_directory))
       }
 
       SearchConfig::WithJustfile { justfile } => {
@@ -93,19 +102,16 @@ impl Search {
 
         let working_directory = Self::working_directory_from_justfile(&justfile)?;
 
-        Ok(Self {
-          justfile,
-          working_directory,
-        })
+        Ok(Self::new(justfile, working_directory))
       }
 
       SearchConfig::WithJustfileAndWorkingDirectory {
         justfile,
         working_directory,
-      } => Ok(Self {
-        justfile: Self::clean(invocation_directory, justfile),
-        working_directory: Self::clean(invocation_directory, working_directory),
-      }),
+      } => Ok(Self::new(
+        Self::clean(invocation_directory, justfile),
+        Self::clean(invocation_directory, working_directory),
+      )),
     }
   }
 

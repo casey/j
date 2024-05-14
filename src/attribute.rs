@@ -5,6 +5,7 @@ use super::*;
 #[serde(rename_all = "kebab-case")]
 pub(crate) enum Attribute<'src> {
   Confirm(Option<StringLiteral<'src>>),
+  Cached,
   Linux,
   Macos,
   NoCd,

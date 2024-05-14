@@ -11,6 +11,10 @@ pub(crate) enum CompileErrorKind<'src> {
     recipe_line: usize,
   },
   BacktickShebang,
+  CachedDependsOnUncached {
+    cached: &'src str,
+    uncached: &'src str,
+  },
   CircularRecipeDependency {
     recipe: &'src str,
     circle: Vec<&'src str>,

@@ -79,13 +79,15 @@ impl<'src: 'run, 'run> RecipeResolver<'src, 'run> {
 
     stack.push(recipe.name());
 
+    let should_cache = recipe.should_cache();
+
     let mut dependencies: Vec<Rc<Recipe>> = Vec::new();
-    for dependency in &recipe.dependencies {
+    for (index, dependency) in recipe.dependencies.iter().enumerate() {
       let name = dependency.recipe.lexeme();
 
-      if let Some(resolved) = self.resolved_recipes.get(name) {
+      let resolved = if let Some(resolved) = self.resolved_recipes.get(name) {
         // dependency already resolved
-        dependencies.push(Rc::clone(resolved));
+        Rc::clone(resolved)
       } else if stack.contains(&name) {
         let first = stack[0];
         stack.push(first);
@@ -101,14 +103,23 @@ impl<'src: 'run, 'run> RecipeResolver<'src, 'run> {
         );
       } else if let Some(unresolved) = self.unresolved_recipes.remove(name) {
         // resolve unresolved dependency
-        dependencies.push(self.resolve_recipe(stack, unresolved)?);
+        self.resolve_recipe(stack, unresolved)?
       } else {
         // dependency is unknown
         return Err(dependency.recipe.error(UnknownDependency {
           recipe: recipe.name(),
           unknown: name,
         }));
+      };
+
+      if index < recipe.priors && should_cache && !resolved.should_cache() {
+        return Err(dependency.recipe.error(CachedDependsOnUncached {
+          cached: recipe.name(),
+          uncached: resolved.name(),
+        }));
       }
+
+      dependencies.push(resolved);
     }
 
     stack.pop();

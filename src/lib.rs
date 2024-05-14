@@ -24,18 +24,19 @@ pub(crate) use {
     enclosure::Enclosure, error::Error, evaluator::Evaluator, expression::Expression,
     fragment::Fragment, function::Function, function_context::FunctionContext,
     interrupt_guard::InterruptGuard, interrupt_handler::InterruptHandler, item::Item,
-    justfile::Justfile, keyed::Keyed, keyword::Keyword, lexer::Lexer, line::Line, list::List,
-    load_dotenv::load_dotenv, loader::Loader, name::Name, namepath::Namepath, ordinal::Ordinal,
-    output::output, output_error::OutputError, parameter::Parameter, parameter_kind::ParameterKind,
-    parser::Parser, platform::Platform, platform_interface::PlatformInterface, position::Position,
-    positional::Positional, ran::Ran, range_ext::RangeExt, recipe::Recipe,
-    recipe_context::RecipeContext, recipe_resolver::RecipeResolver, scope::Scope, search::Search,
-    search_config::SearchConfig, search_error::SearchError, set::Set, setting::Setting,
-    settings::Settings, shebang::Shebang, shell::Shell, show_whitespace::ShowWhitespace,
-    source::Source, string_kind::StringKind, string_literal::StringLiteral, subcommand::Subcommand,
-    suggestion::Suggestion, table::Table, thunk::Thunk, token::Token, token_kind::TokenKind,
-    unresolved_dependency::UnresolvedDependency, unresolved_recipe::UnresolvedRecipe,
-    use_color::UseColor, variables::Variables, verbosity::Verbosity, warning::Warning,
+    justfile::Justfile, justfile_cache::JustfileCache, keyed::Keyed, keyword::Keyword,
+    lexer::Lexer, line::Line, list::List, load_dotenv::load_dotenv, loader::Loader, name::Name,
+    namepath::Namepath, ordinal::Ordinal, output::output, output_error::OutputError,
+    parameter::Parameter, parameter_kind::ParameterKind, parser::Parser, platform::Platform,
+    platform_interface::PlatformInterface, position::Position, positional::Positional, ran::Ran,
+    range_ext::RangeExt, recipe::Recipe, recipe_context::RecipeContext,
+    recipe_resolver::RecipeResolver, scope::Scope, search::Search, search_config::SearchConfig,
+    search_error::SearchError, set::Set, setting::Setting, settings::Settings, shebang::Shebang,
+    shell::Shell, show_whitespace::ShowWhitespace, source::Source, string_kind::StringKind,
+    string_literal::StringLiteral, subcommand::Subcommand, suggestion::Suggestion, table::Table,
+    thunk::Thunk, token::Token, token_kind::TokenKind, unresolved_dependency::UnresolvedDependency,
+    unresolved_recipe::UnresolvedRecipe, use_color::UseColor, variables::Variables,
+    verbosity::Verbosity, warning::Warning,
   },
   std::{
     cmp,
@@ -142,6 +143,7 @@ mod interrupt_guard;
 mod interrupt_handler;
 mod item;
 mod justfile;
+mod justfile_cache;
 mod keyed;
 mod keyword;
 mod lexer;

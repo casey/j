@@ -775,10 +775,10 @@ fn quiet() {
 #[test]
 fn settings() {
   case(
-    "
+    r#"
       set dotenv-load
-      set dotenv-filename := \"filename\"
-      set dotenv-path := \"path\"
+      set dotenv-filename := "dotenv-filename"
+      set dotenv-path := "path"
       set export
       set fallback
       set positional-arguments
@@ -787,7 +787,7 @@ fn settings() {
       set shell := ['a', 'b', 'c']
       foo:
         #!bar
-    ",
+    "#,
     json!({
       "aliases": {},
       "assignments": {},
@@ -810,7 +810,7 @@ fn settings() {
       },
       "settings": {
         "allow_duplicate_recipes": false,
-        "dotenv_filename": "filename",
+        "dotenv_filename": "dotenv-filename",
         "dotenv_load": true,
         "dotenv_path": "path",
         "export": true,

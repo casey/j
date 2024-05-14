@@ -272,12 +272,15 @@ impl<'src> Justfile<'src> {
     }
 
     let mut ran = Ran::default();
+    let mut cache = JustfileCache::new(search)?;
+
     for invocation in invocations {
-      let context = RecipeContext {
+      let mut context = RecipeContext {
         settings: invocation.settings,
         config,
         scope: invocation.scope,
         search,
+        cache: &mut cache,
       };
 
       Self::run_recipe(
@@ -287,7 +290,7 @@ impl<'src> Justfile<'src> {
           .copied()
           .map(str::to_string)
           .collect::<Vec<String>>(),
-        &context,
+        &mut context,
         &dotenv,
         &mut ran,
         invocation.recipe,
@@ -295,7 +298,7 @@ impl<'src> Justfile<'src> {
       )?;
     }
 
-    Ok(())
+    return cache.save(search);
   }
 
   pub(crate) fn get_alias(&self, name: &str) -> Option<&Alias<'src>> {
@@ -403,12 +406,12 @@ impl<'src> Justfile<'src> {
 
   fn run_recipe(
     arguments: &[String],
-    context: &RecipeContext<'src, '_>,
+    context: &mut RecipeContext<'src, '_>,
     dotenv: &BTreeMap<String, String>,
     ran: &mut Ran<'src>,
     recipe: &Recipe<'src>,
     search: &Search,
-  ) -> RunResult<'src> {
+  ) -> RunResult<'src, ()> {
     if ran.has_run(&recipe.namepath, arguments) {
       return Ok(());
     }
@@ -445,9 +448,16 @@ impl<'src> Justfile<'src> {
       }
     }
 
-    recipe.run(context, dotenv, scope.child(), search, &positional)?;
+    let updated_hash = recipe.run(context, dotenv, scope.child(), search, &positional)?;
+    let recipe_hash_changed = updated_hash.is_some();
 
-    if !context.config.no_dependencies {
+    if let Some(body_hash) = updated_hash {
+      context
+        .cache
+        .insert_recipe(recipe.name.to_string(), body_hash);
+    }
+
+    if !context.config.no_dependencies && (!recipe.should_cache() || recipe_hash_changed) {
       let mut ran = Ran::default();
 
       for Dependency { recipe, arguments } in recipe.dependencies.iter().skip(recipe.priors) {
