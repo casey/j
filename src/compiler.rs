@@ -68,7 +68,7 @@ impl Compiler {
             optional,
             path,
           } => {
-            let import = current
+            let import_base = current
               .path
               .parent()
               .unwrap()
@@ -76,6 +76,23 @@ impl Compiler {
               .lexiclean();
 
             println!("IMPORT: {}", import.display());
+
+            let glob_options = glob::MatchOptions {
+              case_sensitive: true,
+              require_literal_separator: false,
+              require_literal_leading_dot: false,
+            };
+
+            let import_paths = glob::glob_with(&import_base.display().to_string(), glob_options);
+            for import in import_paths {
+              if import.is_file() {
+
+              }
+
+            }
+
+
+
 
             if import.is_file() {
               if current.file_path.contains(&import) {
