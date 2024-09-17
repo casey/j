@@ -64,7 +64,7 @@ impl Compiler {
           }
           Item::Import {
             relative,
-            absolute,
+            absolute_paths,
             optional,
             path,
           } => {
@@ -75,6 +75,8 @@ impl Compiler {
               .join(Self::expand_tilde(&relative.cooked)?)
               .lexiclean();
 
+            println!("IMPORT: {}", import.display());
+
             if import.is_file() {
               if current.file_path.contains(&import) {
                 return Err(Error::CircularImport {
@@ -82,7 +84,8 @@ impl Compiler {
                   import,
                 });
               }
-              *absolute = Some(import.clone());
+              //*absolute = Some(import.clone());
+              *absolute_paths = vec![import.clone()];
               stack.push(current.import(import, path.offset));
             } else if !*optional {
               return Err(Error::MissingImportFile { path: *path });
