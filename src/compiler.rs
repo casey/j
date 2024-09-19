@@ -68,41 +68,45 @@ impl Compiler {
             optional,
             path,
           } => {
-            let import_base = current
+            let import = current
               .path
               .parent()
               .unwrap()
               .join(Self::expand_tilde(&relative.cooked)?)
               .lexiclean();
 
-            println!("IMPORT: {}", import.display());
+            let import_base_str = import.to_string_lossy();
+            let has_glob = import_base_str.find('*').is_some();
 
-            let glob_options = glob::MatchOptions {
-              case_sensitive: true,
-              require_literal_separator: false,
-              require_literal_leading_dot: false,
-            };
+            if has_glob {
+              let glob_options = glob::MatchOptions {
+                case_sensitive: true,
+                require_literal_separator: false,
+                require_literal_leading_dot: false,
+              };
+              let import_paths = glob::glob_with(&import_base_str, glob_options).unwrap();
+              for import in import_paths {
+                let import = import.unwrap();
 
-            let import_paths = glob::glob_with(&import_base.display().to_string(), glob_options);
-            for import in import_paths {
-              if import.is_file() {
-
+                if import.is_file() {
+                  if current.file_path.contains(&import) {
+                    return Err(Error::CircularImport {
+                      current: current.path,
+                      import,
+                    });
+                  }
+                  absolute_paths.push(import.clone());
+                  stack.push(current.import(import, path.offset));
+                }
               }
-
-            }
-
-
-
-
-            if import.is_file() {
+            } else if import.is_file() {
               if current.file_path.contains(&import) {
                 return Err(Error::CircularImport {
                   current: current.path,
                   import,
                 });
               }
-              //*absolute = Some(import.clone());
-              *absolute_paths = vec![import.clone()];
+              absolute_paths.push(import.clone());
               stack.push(current.import(import, path.offset));
             } else if !*optional {
               return Err(Error::MissingImportFile { path: *path });
@@ -309,6 +313,44 @@ recipe_b: recipe_c
     assert_matches!(loader_output, Error::CircularImport { current, import }
       if current == tmp.path().join("subdir").join("b").lexiclean() &&
       import == tmp.path().join("justfile").lexiclean()
+    );
+  }
+
+  #[test]
+  fn glob_imports() {
+    let justfile_top = r#"
+import "./subdir/*.just"
+          "#;
+    let justfile_a = r"
+a:
+    ";
+    let justfile_b = r"
+b:
+             ";
+    let unused_justfile = r"
+x:
+             ";
+    let tmp = temptree! {
+      justfile: justfile_top,
+      subdir: {
+        "a.just": justfile_a,
+        "b.just": justfile_b,
+        unusued: unused_justfile,
+      }
+    };
+    let loader = Loader::new();
+    let justfile_path = tmp.path().join("justfile");
+    let compilation = Compiler::compile(&loader, &justfile_path).unwrap();
+    let imported_files: HashSet<&PathBuf> = compilation.srcs.keys().collect();
+    assert_eq!(
+      imported_files,
+      [
+        justfile_path,
+        tmp.path().join("subdir/a.just"),
+        tmp.path().join("subdir/b.just")
+      ]
+      .iter()
+      .collect()
     );
   }
 
