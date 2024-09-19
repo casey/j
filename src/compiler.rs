@@ -84,9 +84,10 @@ impl Compiler {
                 require_literal_separator: false,
                 require_literal_leading_dot: false,
               };
-              let import_paths = glob::glob_with(&import_base_str, glob_options).unwrap();
+              let import_paths = glob::glob_with(&import_base_str, glob_options)
+                .map_err(|error| Error::ImportGlob { error, path: *path })?;
               for import in import_paths {
-                let import = import.unwrap();
+                let Ok(import) = import else { continue };
 
                 if import.is_file() {
                   if current.file_path.contains(&import) {
@@ -352,6 +353,22 @@ x:
       .iter()
       .collect()
     );
+  }
+
+  #[test]
+  fn invalid_glob_imports() {
+    let justfile = r#"
+import "./subdir/***.just"
+    "#;
+    let tmp = temptree! {
+        justfile: justfile,
+    };
+    let loader = Loader::new();
+    let justfile_path = tmp.path().join("justfile");
+    let error = Compiler::compile(&loader, &justfile_path).unwrap_err();
+    let expected = "error: import path glob: Pattern syntax error";
+    let actual = error.color_display(Color::never()).to_string();
+    assert!(actual.contains(expected), "Actual: {actual}");
   }
 
   #[test]

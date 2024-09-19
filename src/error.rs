@@ -110,6 +110,10 @@ pub(crate) enum Error<'src> {
     io_error: io::Error,
   },
   Homedir,
+  ImportGlob {
+    error: glob::PatternError,
+    path: Token<'src>,
+  },
   InitExists {
     justfile: PathBuf,
   },
@@ -212,7 +216,7 @@ impl<'src> Error<'src> {
       Self::Backtick { token, .. } => Some(*token),
       Self::Compile { compile_error } => Some(compile_error.context()),
       Self::FunctionCall { function, .. } => Some(function.token),
-      Self::MissingImportFile { path } => Some(*path),
+      Self::MissingImportFile { path } | Self::ImportGlob { path, .. } => Some(*path),
       _ => None,
     }
   }
@@ -395,6 +399,7 @@ impl<'src> ColorDisplay for Error<'src> {
       Homedir => {
         write!(f, "Failed to get homedir")?;
       }
+      ImportGlob { error, .. } => write!(f, "import path glob: {error}")?,
       InitExists { justfile } => {
         write!(f, "Justfile `{}` already exists", justfile.display())?;
       }
