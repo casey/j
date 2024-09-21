@@ -1,5 +1,11 @@
 use {super::*, std::collections};
 
+#[derive(Debug, Copy, Clone)]
+pub(crate) enum InvertedStatus {
+  Normal,
+  Inverted,
+}
+
 #[derive(Default, Debug, Clone, PartialEq, Serialize)]
 pub(crate) struct AttributeSet<'src>(BTreeSet<Attribute<'src>>);
 
@@ -10,6 +16,28 @@ impl<'src> AttributeSet<'src> {
 
   pub(crate) fn contains(&self, target: AttributeDiscriminant) -> bool {
     self.0.iter().any(|attr| attr.discriminant() == target)
+  }
+
+  pub(crate) fn contains_invertible(
+    &self,
+    target: AttributeDiscriminant,
+  ) -> Option<InvertedStatus> {
+    self.get(target).and_then(|attr| {
+      Some(match attr {
+        Attribute::Linux { inverted }
+        | Attribute::Macos { inverted }
+        | Attribute::Openbsd { inverted }
+        | Attribute::Unix { inverted }
+        | Attribute::Windows { inverted } => {
+          if *inverted {
+            InvertedStatus::Inverted
+          } else {
+            InvertedStatus::Normal
+          }
+        }
+        _ => return None,
+      })
+    })
   }
 
   pub(crate) fn get(&self, discriminant: AttributeDiscriminant) -> Option<&Attribute<'src>> {

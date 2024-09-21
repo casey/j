@@ -45,6 +45,30 @@ fn duplicate_attributes_are_disallowed() {
 }
 
 #[test]
+fn conflicting_invertible_attributes_are_disallowed() {
+  Test::new()
+    .justfile(
+      "
+      [windows]
+      [not(windows)]
+      foo:
+        echo bar
+    ",
+    )
+    .stderr(
+      "
+      error: Recipe attribute `windows` first used on line 1 is duplicated on line 2
+       ——▶ justfile:2:6
+        │
+      2 │ [not(windows)]
+        │      ^^^^^^^
+      ",
+    )
+    .status(1)
+    .run();
+}
+
+#[test]
 fn multiple_attributes_one_line() {
   Test::new()
     .justfile(
@@ -252,5 +276,29 @@ fn duplicate_non_repeatable_attributes_are_forbidden() {
 ",
     )
     .status(EXIT_FAILURE)
+    .run();
+}
+
+#[test]
+fn invertible_attributes() {
+  let test = Test::new().justfile(
+    "
+      [not(windows)]
+      non-windows-recipe:
+        echo 'non-windows'
+
+      [windows]
+      windows-recipe:
+        echo 'windows'
+      ",
+  );
+
+  #[cfg(windows)]
+  test.stdout("windows\n").stderr("echo 'windows'\n").run();
+
+  #[cfg(not(windows))]
+  test
+    .stdout("non-windows\n")
+    .stderr("echo 'non-windows'\n")
     .run();
 }

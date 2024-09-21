@@ -186,6 +186,9 @@ impl Display for CompileError<'_> {
           _ => character.escape_default().collect(),
         }
       ),
+      InvalidInvertedAttribute { attr_name } => {
+        write!(f, "{attr_name} cannot be inverted with `not()`")
+      }
       MismatchedClosingDelimiter {
         open,
         open_line,

@@ -116,19 +116,81 @@ impl<'src, D> Recipe<'src, D> {
   }
 
   pub(crate) fn enabled(&self) -> bool {
-    let linux = self.attributes.contains(AttributeDiscriminant::Linux);
-    let macos = self.attributes.contains(AttributeDiscriminant::Macos);
-    let openbsd = self.attributes.contains(AttributeDiscriminant::Openbsd);
-    let unix = self.attributes.contains(AttributeDiscriminant::Unix);
-    let windows = self.attributes.contains(AttributeDiscriminant::Windows);
+    use attribute_set::InvertedStatus;
 
-    (!windows && !linux && !macos && !openbsd && !unix)
-      || (cfg!(target_os = "linux") && (linux || unix))
-      || (cfg!(target_os = "macos") && (macos || unix))
-      || (cfg!(target_os = "openbsd") && (openbsd || unix))
-      || (cfg!(target_os = "windows") && windows)
-      || (cfg!(unix) && unix)
-      || (cfg!(windows) && windows)
+    struct Systems {
+      linux: bool,
+      macos: bool,
+      openbsd: bool,
+      unix: bool,
+      windows: bool,
+    }
+
+    let linux = self
+      .attributes
+      .contains_invertible(AttributeDiscriminant::Linux);
+    let macos = self
+      .attributes
+      .contains_invertible(AttributeDiscriminant::Macos);
+    let openbsd = self
+      .attributes
+      .contains_invertible(AttributeDiscriminant::Openbsd);
+    let unix = self
+      .attributes
+      .contains_invertible(AttributeDiscriminant::Unix);
+    let windows = self
+      .attributes
+      .contains_invertible(AttributeDiscriminant::Windows);
+
+    if [linux, macos, openbsd, unix, windows]
+      .into_iter()
+      .all(|x| x.is_none())
+    {
+      return true;
+    }
+
+    let systems = Systems {
+      linux: matches!(linux, Some(InvertedStatus::Normal)),
+      macos: matches!(macos, Some(InvertedStatus::Normal)),
+      openbsd: matches!(openbsd, Some(InvertedStatus::Normal)),
+      unix: matches!(unix, Some(InvertedStatus::Normal)),
+      windows: matches!(windows, Some(InvertedStatus::Normal)),
+    };
+
+    let disabled = Systems {
+      linux: matches!(linux, Some(InvertedStatus::Inverted)),
+      macos: matches!(macos, Some(InvertedStatus::Inverted)),
+      openbsd: matches!(openbsd, Some(InvertedStatus::Inverted)),
+      unix: matches!(unix, Some(InvertedStatus::Inverted)),
+      windows: matches!(windows, Some(InvertedStatus::Inverted)),
+    };
+
+    if cfg!(target_os = "linux") {
+      return !(disabled.linux || disabled.unix)
+        && ((systems.linux || systems.unix)
+          || (!systems.openbsd && !systems.windows && !systems.macos));
+    }
+
+    if cfg!(target_os = "openbsd") {
+      return !disabled.openbsd
+        && (systems.openbsd || (!systems.windows && !systems.macos && !systems.linux));
+    }
+
+    if cfg!(target_os = "windows") || cfg!(windows) {
+      return !disabled.windows
+        && (systems.windows
+          || (!systems.openbsd && !systems.unix && !systems.macos && !systems.linux));
+    }
+
+    if cfg!(target_os = "macos") {
+      return !disabled.macos
+        && (systems.macos || (!systems.openbsd && !systems.windows && !systems.linux));
+    }
+
+    if cfg!(unix) {
+      return !(disabled.unix) && (systems.unix || !systems.windows);
+    }
+    false
   }
 
   fn print_exit_message(&self) -> bool {

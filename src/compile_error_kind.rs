@@ -79,6 +79,9 @@ pub(crate) enum CompileErrorKind<'src> {
   InvalidEscapeSequence {
     character: char,
   },
+  InvalidInvertedAttribute {
+    attr_name: &'src str,
+  },
   MismatchedClosingDelimiter {
     close: Delimiter,
     open: Delimiter,
