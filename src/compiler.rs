@@ -79,6 +79,11 @@ impl Compiler {
             let has_glob = import_base_str.find('*').is_some();
 
             if has_glob {
+                let glob = globset::Glob::new(&import_base_str).map_err(|_err|
+                    Error::ImportGlob { error: "FIX ERR".to_string(), path: *path }
+                )?.compile_matcher();
+                /*
+
               let glob_options = glob::MatchOptions {
                 case_sensitive: true,
                 require_literal_separator: false,
@@ -100,6 +105,7 @@ impl Compiler {
                   stack.push(current.import(import, path.offset));
                 }
               }
+                */
             } else if import.is_file() {
               if current.file_path.contains(&import) {
                 return Err(Error::CircularImport {

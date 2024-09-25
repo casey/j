@@ -111,7 +111,7 @@ pub(crate) enum Error<'src> {
   },
   Homedir,
   ImportGlob {
-    error: glob::PatternError,
+    error: String,
     path: Token<'src>,
   },
   InitExists {
