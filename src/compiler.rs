@@ -79,10 +79,35 @@ impl Compiler {
             let has_glob = import_base_str.find('*').is_some();
 
             if has_glob {
+              let walker = globwalk::glob_builder(import_base_str)
+                .build()
+                .map_err(|_err| Error::ImportGlob {
+                  error: "FIX ERR".to_string(),
+                  path: *path,
+                })?;
+              for maybe_entry in walker {
+                let Ok(entry) = maybe_entry else { continue };
+                let import = entry.path().to_owned();
+                println!("IMPORT: {}", import.display());
+
+                if import.is_file() {
+                  if current.file_path.contains(&import) {
+                    return Err(Error::CircularImport {
+                      current: current.path,
+                      import,
+                    });
+                  }
+                  absolute_paths.push(import.clone());
+                  stack.push(current.import(import, path.offset));
+                }
+              }
+
+              /*
                 let glob = globset::Glob::new(&import_base_str).map_err(|_err|
                     Error::ImportGlob { error: "FIX ERR".to_string(), path: *path }
                 )?.compile_matcher();
-                /*
+              */
+              /*
 
               let glob_options = glob::MatchOptions {
                 case_sensitive: true,
@@ -364,7 +389,7 @@ x:
   #[test]
   fn invalid_glob_imports() {
     let justfile = r#"
-import "./subdir/***.just"
+import "./subdir/****.just"
     "#;
     let tmp = temptree! {
         justfile: justfile,
