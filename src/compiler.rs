@@ -95,14 +95,21 @@ impl Compiler {
                 });
               }
 
-              let import_base_str = import.to_string_lossy();
+              let import_base_str =
+                import
+                  .as_os_str()
+                  .to_str()
+                  .ok_or_else(|| Error::ImportGlob {
+                    error: "non-UTF-8 glob import".to_string(),
+                    path: *path,
+                  })?;
               let glob_options = glob::MatchOptions {
                 case_sensitive: true,
                 require_literal_separator: false,
                 require_literal_leading_dot: false,
               };
               let import_paths =
-                glob::glob_with(&import_base_str, glob_options).map_err(|error| {
+                glob::glob_with(import_base_str, glob_options).map_err(|error| {
                   Error::ImportGlob {
                     error: error.to_string(),
                     path: *path,
