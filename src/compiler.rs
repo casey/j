@@ -79,43 +79,18 @@ impl Compiler {
             let has_glob = import_base_str.find('*').is_some();
 
             if has_glob {
-              let walker = globwalk::glob_builder(import_base_str)
-                .build()
-                .map_err(|_err| Error::ImportGlob {
-                  error: "FIX ERR".to_string(),
-                  path: *path,
-                })?;
-              for maybe_entry in walker {
-                let Ok(entry) = maybe_entry else { continue };
-                let import = entry.path().to_owned();
-                println!("IMPORT: {}", import.display());
-
-                if import.is_file() {
-                  if current.file_path.contains(&import) {
-                    return Err(Error::CircularImport {
-                      current: current.path,
-                      import,
-                    });
-                  }
-                  absolute_paths.push(import.clone());
-                  stack.push(current.import(import, path.offset));
-                }
-              }
-
-              /*
-                let glob = globset::Glob::new(&import_base_str).map_err(|_err|
-                    Error::ImportGlob { error: "FIX ERR".to_string(), path: *path }
-                )?.compile_matcher();
-              */
-              /*
-
               let glob_options = glob::MatchOptions {
                 case_sensitive: true,
                 require_literal_separator: false,
                 require_literal_leading_dot: false,
               };
-              let import_paths = glob::glob_with(&import_base_str, glob_options)
-                .map_err(|error| Error::ImportGlob { error, path: *path })?;
+              let import_paths =
+                glob::glob_with(&import_base_str, glob_options).map_err(|error| {
+                  Error::ImportGlob {
+                    error: error.to_string(),
+                    path: *path,
+                  }
+                })?;
               for import in import_paths {
                 let Ok(import) = import else { continue };
 
@@ -130,7 +105,6 @@ impl Compiler {
                   stack.push(current.import(import, path.offset));
                 }
               }
-                */
             } else if import.is_file() {
               if current.file_path.contains(&import) {
                 return Err(Error::CircularImport {
