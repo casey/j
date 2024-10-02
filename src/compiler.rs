@@ -6,6 +6,7 @@ impl Compiler {
   pub(crate) fn compile<'src>(
     loader: &'src Loader,
     root: &Path,
+    unstable: bool,
   ) -> RunResult<'src, Compilation<'src>> {
     let mut asts = HashMap::<PathBuf, Ast>::new();
     let mut loaded = Vec::new();
@@ -30,6 +31,16 @@ impl Compiler {
 
       paths.insert(current.path.clone(), relative.into());
       srcs.insert(current.path.clone(), src);
+
+      let ast_unstable = ast.items.iter().any(|item| {
+        matches!(
+          item,
+          Item::Set(Set {
+            name: _,
+            value: Setting::Unstable(true)
+          })
+        )
+      });
 
       for item in &mut ast.items {
         match item {
@@ -75,10 +86,16 @@ impl Compiler {
               .join(Self::expand_tilde(&relative.cooked)?)
               .lexiclean();
 
-            let import_base_str = import.to_string_lossy();
-            let has_glob = import_base_str.find('*').is_some();
+            let has_glob = import.as_os_str().as_encoded_bytes().contains(&b'*');
 
             if has_glob {
+              if !(unstable || ast_unstable) {
+                return Err(Error::UnstableFeature {
+                  unstable_feature: UnstableFeature::GlobImport,
+                });
+              }
+
+              let import_base_str = import.to_string_lossy();
               let glob_options = glob::MatchOptions {
                 case_sensitive: true,
                 require_literal_separator: false,
@@ -297,7 +314,7 @@ recipe_b: recipe_c
     let loader = Loader::new();
 
     let justfile_a_path = tmp.path().join("justfile");
-    let compilation = Compiler::compile(&loader, &justfile_a_path).unwrap();
+    let compilation = Compiler::compile(&loader, &justfile_a_path, false).unwrap();
 
     assert_eq!(compilation.root_src(), justfile_a);
   }
@@ -314,7 +331,7 @@ recipe_b: recipe_c
     let loader = Loader::new();
 
     let justfile_a_path = tmp.path().join("justfile");
-    let loader_output = Compiler::compile(&loader, &justfile_a_path).unwrap_err();
+    let loader_output = Compiler::compile(&loader, &justfile_a_path, false).unwrap_err();
 
     assert_matches!(loader_output, Error::CircularImport { current, import }
       if current == tmp.path().join("subdir").join("b").lexiclean() &&
@@ -346,7 +363,7 @@ x:
     };
     let loader = Loader::new();
     let justfile_path = tmp.path().join("justfile");
-    let compilation = Compiler::compile(&loader, &justfile_path).unwrap();
+    let compilation = Compiler::compile(&loader, &justfile_path, true).unwrap();
     let imported_files: HashSet<&PathBuf> = compilation.srcs.keys().collect();
     assert_eq!(
       imported_files,
@@ -370,7 +387,7 @@ import "./subdir/****.just"
     };
     let loader = Loader::new();
     let justfile_path = tmp.path().join("justfile");
-    let error = Compiler::compile(&loader, &justfile_path).unwrap_err();
+    let error = Compiler::compile(&loader, &justfile_path, true).unwrap_err();
     let expected = "error: import path glob: Pattern syntax error";
     let actual = error.color_display(Color::never()).to_string();
     assert!(actual.contains(expected), "Actual: {actual}");

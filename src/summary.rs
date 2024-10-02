@@ -25,10 +25,10 @@ mod full {
   };
 }
 
-pub fn summary(path: &Path) -> io::Result<Result<Summary, String>> {
+pub fn summary(path: &Path, unstable: bool) -> io::Result<Result<Summary, String>> {
   let loader = Loader::new();
 
-  match Compiler::compile(&loader, path) {
+  match Compiler::compile(&loader, path, unstable) {
     Ok(compilation) => Ok(Ok(Summary::new(&compilation.justfile))),
     Err(error) => Ok(Err(if let Error::Compile { compile_error } = error {
       compile_error.to_string()
