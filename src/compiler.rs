@@ -127,6 +127,14 @@ impl Compiler {
                   }
                   absolute_paths.push(import.clone());
                   stack.push(current.import(import, path.offset));
+                } else if import.is_dir() {
+                  return Err(Error::ImportGlob {
+                    error: format!(
+                      "a glob import cannot match a directory; matched `{}`",
+                      import.display()
+                    ),
+                    path: *path,
+                  });
                 }
               }
             } else if import.is_file() {
@@ -385,7 +393,7 @@ x:
   }
 
   #[test]
-  fn invalid_glob_imports() {
+  fn malformed_glob_imports() {
     let justfile = r#"
 import "./subdir/****.just"
     "#;
@@ -396,6 +404,31 @@ import "./subdir/****.just"
     let justfile_path = tmp.path().join("justfile");
     let error = Compiler::compile(&loader, &justfile_path, true).unwrap_err();
     let expected = "error: import path glob: Pattern syntax error";
+    let actual = error.color_display(Color::never()).to_string();
+    assert!(actual.contains(expected), "Actual: {actual}");
+  }
+
+  #[test]
+  fn glob_import_match_dir_errors() {
+    let justfile_top = r#"
+import "./subdir/*"
+          "#;
+    let justfile_a = r"
+a:
+    ";
+    let tmp = temptree! {
+      justfile: justfile_top,
+      subdir: {
+        "a.just": justfile_a,
+        subsubdir: {
+
+        }
+      }
+    };
+    let loader = Loader::new();
+    let justfile_path = tmp.path().join("justfile");
+    let error = Compiler::compile(&loader, &justfile_path, true).unwrap_err();
+    let expected = "error: import path glob: a glob import cannot match a directory";
     let actual = error.color_display(Color::never()).to_string();
     assert!(actual.contains(expected), "Actual: {actual}");
   }
