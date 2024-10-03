@@ -91,7 +91,7 @@ impl Compiler {
             if has_glob {
               if !(unstable || ast_unstable) {
                 return Err(Error::UnstableFeature {
-                  unstable_feature: UnstableFeature::GlobImport,
+                  unstable_feature: UnstableFeature::ImportPathGlob,
                 });
               }
 

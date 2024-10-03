@@ -53,8 +53,8 @@ impl<'run, 'src> Analyzer<'run, 'src> {
           }
           Item::Comment(_) => (),
           Item::Import { absolute_paths, .. } => {
-            for p in absolute_paths {
-              stack.push(asts.get(p).unwrap());
+            for path in absolute_paths {
+              stack.push(asts.get(path).unwrap());
             }
           }
           Item::Module {
