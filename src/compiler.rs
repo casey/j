@@ -95,17 +95,13 @@ impl Compiler {
                 });
               }
 
-              let import_base_str =
-                import
-                  .as_os_str()
-                  .to_str()
-                  .ok_or_else(|| Error::ImportGlob {
-                    error: "non-UTF-8 glob import".to_string(),
-                    path: *path,
-                  })?;
+              let import_base_str = import.to_str().ok_or_else(|| Error::ImportGlob {
+                error: "non-UTF-8 glob import".to_string(),
+                path: *path,
+              })?;
               let glob_options = glob::MatchOptions {
                 case_sensitive: true,
-                require_literal_separator: false,
+                require_literal_separator: true,
                 require_literal_leading_dot: false,
               };
               let import_paths =
@@ -116,7 +112,10 @@ impl Compiler {
                   }
                 })?;
               for import in import_paths {
-                let Ok(import) = import else { continue };
+                let import = import.map_err(|glob_err| Error::ImportGlob {
+                  path: *path,
+                  error: glob_err.path().display().to_string(),
+                })?;
 
                 if import.is_file() {
                   if current.file_path.contains(&import) {
