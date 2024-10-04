@@ -114,6 +114,14 @@ pub(crate) enum Error<'src> {
     error: String,
     path: Token<'src>,
   },
+  ImportGlobDirectory {
+    path: Token<'src>,
+    import: PathBuf,
+  },
+  ImportGlobPattern {
+    path: Token<'src>,
+    glob_err: glob::GlobError,
+  },
   InitExists {
     justfile: PathBuf,
   },
@@ -216,7 +224,10 @@ impl<'src> Error<'src> {
       Self::Backtick { token, .. } => Some(*token),
       Self::Compile { compile_error } => Some(compile_error.context()),
       Self::FunctionCall { function, .. } => Some(function.token),
-      Self::MissingImportFile { path } | Self::ImportGlob { path, .. } => Some(*path),
+      Self::MissingImportFile { path }
+      | Self::ImportGlob { path, .. }
+      | Self::ImportGlobPattern { path, .. }
+      | Self::ImportGlobDirectory { path, .. } => Some(*path),
       _ => None,
     }
   }
@@ -400,6 +411,8 @@ impl<'src> ColorDisplay for Error<'src> {
         write!(f, "Failed to get homedir")?;
       }
       ImportGlob { error, .. } => write!(f, "import path glob: {error}")?,
+      ImportGlobDirectory { import, .. } => write!(f, "A glob import cannot match a directory; matched `{}`", import.display())?,
+      ImportGlobPattern { .. } => write!(f, "IMPORT GLOB PATTERN")?,
       InitExists { justfile } => {
         write!(f, "Justfile `{}` already exists", justfile.display())?;
       }

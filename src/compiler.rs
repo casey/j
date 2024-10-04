@@ -112,9 +112,9 @@ impl Compiler {
                   }
                 })?;
               for import in import_paths {
-                let import = import.map_err(|glob_err| Error::ImportGlob {
+                let import = import.map_err(|glob_err| Error::ImportGlobPattern {
                   path: *path,
-                  error: glob_err.path().display().to_string(),
+                  glob_err,
                 })?;
 
                 if import.is_file() {
@@ -127,11 +127,8 @@ impl Compiler {
                   absolute_paths.push(import.clone());
                   stack.push(current.import(import, path.offset));
                 } else if import.is_dir() {
-                  return Err(Error::ImportGlob {
-                    error: format!(
-                      "a glob import cannot match a directory; matched `{}`",
-                      import.display()
-                    ),
+                  return Err(Error::ImportGlobDirectory {
+                    import,
                     path: *path,
                   });
                 }
@@ -427,7 +424,7 @@ a:
     let loader = Loader::new();
     let justfile_path = tmp.path().join("justfile");
     let error = Compiler::compile(&loader, &justfile_path, true).unwrap_err();
-    let expected = "error: import path glob: a glob import cannot match a directory";
+    let expected = "error: A glob import cannot match a directory";
     let actual = error.color_display(Color::never()).to_string();
     assert!(actual.contains(expected), "Actual: {actual}");
   }
