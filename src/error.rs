@@ -110,9 +110,9 @@ pub(crate) enum Error<'src> {
     io_error: io::Error,
   },
   Homedir,
-  ImportGlob {
-    error: String,
+  ImportGlobIteration {
     path: Token<'src>,
+    glob_err: glob::GlobError,
   },
   ImportGlobDirectory {
     path: Token<'src>,
@@ -120,7 +120,10 @@ pub(crate) enum Error<'src> {
   },
   ImportGlobPattern {
     path: Token<'src>,
-    glob_err: glob::GlobError,
+    pattern_err: glob::PatternError,
+  },
+  ImportGlobUnicode {
+    path: Token<'src>,
   },
   InitExists {
     justfile: PathBuf,
@@ -225,7 +228,8 @@ impl<'src> Error<'src> {
       Self::Compile { compile_error } => Some(compile_error.context()),
       Self::FunctionCall { function, .. } => Some(function.token),
       Self::MissingImportFile { path }
-      | Self::ImportGlob { path, .. }
+      | Self::ImportGlobIteration { path, .. }
+      | Self::ImportGlobUnicode { path, .. }
       | Self::ImportGlobPattern { path, .. }
       | Self::ImportGlobDirectory { path, .. } => Some(*path),
       _ => None,
@@ -410,9 +414,10 @@ impl<'src> ColorDisplay for Error<'src> {
       Homedir => {
         write!(f, "Failed to get homedir")?;
       }
-      ImportGlob { error, .. } => write!(f, "import path glob: {error}")?,
+      ImportGlobIteration { glob_err,.. } => write!(f, "Glob error: {glob_err}")?,
       ImportGlobDirectory { import, .. } => write!(f, "A glob import cannot match a directory; matched `{}`", import.display())?,
-      ImportGlobPattern { .. } => write!(f, "IMPORT GLOB PATTERN")?,
+      ImportGlobPattern { pattern_err, .. } => write!(f, "Invalid glob pattern: {pattern_err}")?,
+      ImportGlobUnicode { .. } => write!(f, "Non-UTF-8 glob import")?,
       InitExists { justfile } => {
         write!(f, "Justfile `{}` already exists", justfile.display())?;
       }

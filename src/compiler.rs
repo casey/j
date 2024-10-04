@@ -95,24 +95,23 @@ impl Compiler {
                 });
               }
 
-              let import_base_str = import.to_str().ok_or_else(|| Error::ImportGlob {
-                error: "non-UTF-8 glob import".to_string(),
-                path: *path,
-              })?;
+              let import_base_str = import
+                .to_str()
+                .ok_or_else(|| Error::ImportGlobUnicode { path: *path })?;
               let glob_options = glob::MatchOptions {
                 case_sensitive: true,
                 require_literal_separator: true,
                 require_literal_leading_dot: false,
               };
               let import_paths =
-                glob::glob_with(import_base_str, glob_options).map_err(|error| {
-                  Error::ImportGlob {
-                    error: error.to_string(),
+                glob::glob_with(import_base_str, glob_options).map_err(|pattern_err| {
+                  Error::ImportGlobPattern {
+                    pattern_err,
                     path: *path,
                   }
                 })?;
               for import in import_paths {
-                let import = import.map_err(|glob_err| Error::ImportGlobPattern {
+                let import = import.map_err(|glob_err| Error::ImportGlobIteration {
                   path: *path,
                   glob_err,
                 })?;
@@ -399,7 +398,7 @@ import "./subdir/****.just"
     let loader = Loader::new();
     let justfile_path = tmp.path().join("justfile");
     let error = Compiler::compile(&loader, &justfile_path, true).unwrap_err();
-    let expected = "error: import path glob: Pattern syntax error";
+    let expected = "error: Invalid glob pattern: Pattern syntax error";
     let actual = error.color_display(Color::never()).to_string();
     assert!(actual.contains(expected), "Actual: {actual}");
   }
