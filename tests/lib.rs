@@ -36,6 +36,7 @@ mod allow_duplicate_variables;
 mod assert_stdout;
 mod assert_success;
 mod assertions;
+mod assignment;
 mod attributes;
 mod backticks;
 mod byte_order_mark;
