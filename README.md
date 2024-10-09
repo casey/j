@@ -381,6 +381,16 @@ to determine the latest version of `just` to install, and those API calls are
 rate-limited on a per-IP basis. To make `install.sh` more reliable in such
 circumstances, pass a specific tag to install with `--tag`.
 
+[Releases](https://github.com/casey/just/releases) include a `SHA256SUM` file
+which can be used to verify the integrity of pre-built binary archives.
+
+To verify a release, download the pre-built binary archive along with the
+`SHA256SUM` file and run:
+
+```sh
+shasum --algorithm 256 --ignore-missing --check SHA256SUMS
+```
+
 ### GitHub Actions
 
 `just` can be installed on GitHub Actions in a few ways.

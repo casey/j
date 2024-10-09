@@ -44,13 +44,11 @@ case $OS in
   ubuntu-latest | macos-latest)
     ARCHIVE=just-$VERSION-$TARGET.tar.gz
     tar czf $ARCHIVE *
-    shasum -a 256 $ARCHIVE > $ARCHIVE.sha256sum
     echo "archive=$DIST/$ARCHIVE" >> $GITHUB_OUTPUT
     ;;
   windows-latest)
     ARCHIVE=just-$VERSION-$TARGET.zip
     7z a $ARCHIVE *
-    sha256sum $ARCHIVE > $ARCHIVE.sha256sum
     echo "archive=`pwd -W`/$ARCHIVE" >> $GITHUB_OUTPUT
     ;;
 esac
