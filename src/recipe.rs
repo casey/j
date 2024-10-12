@@ -469,6 +469,10 @@ impl<'src, D> Recipe<'src, D> {
     }
     self.doc
   }
+
+  pub(crate) fn subsequents(&self) -> impl Iterator<Item = &D> {
+    self.dependencies.iter().skip(self.priors)
+  }
 }
 
 impl<'src, D: Display> ColorDisplay for Recipe<'src, D> {

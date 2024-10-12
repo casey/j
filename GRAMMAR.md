@@ -116,7 +116,7 @@ string        : 'x'? STRING
 sequence      : expression ',' sequence
               | expression ','?
 
-recipe        : attributes* '@'? NAME parameter* variadic? ':' dependency* eol body?
+recipe        : attributes* '@'? NAME parameter* variadic? ':' dependencies eol body?
 
 attributes    : '[' attribute* ']' eol
 
@@ -127,6 +127,8 @@ parameter     : '$'? NAME
 
 variadic      : '*' parameter
               | '+' parameter
+
+dependencies  : dependency* ('&&' dependency+)?
 
 dependency    : NAME
               | '(' NAME expression* ')'

@@ -346,7 +346,7 @@ impl<'src> Justfile<'src> {
     if !context.config.no_dependencies {
       let mut ran = Ran::default();
 
-      for Dependency { recipe, arguments } in recipe.dependencies.iter().skip(recipe.priors) {
+      for Dependency { recipe, arguments } in recipe.subsequents() {
         let mut evaluated = Vec::new();
 
         for argument in arguments {

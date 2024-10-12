@@ -2303,6 +2303,19 @@ foo $argument:
 
 - [`watchexec`](https://github.com/mattgreen/watchexec) — 一个简单的工具，它监控一个路径，并在检测到修改时运行一个命令。
 
+### 并行运行任务
+
+GNU parallel 可以用来同时运行多个任务：
+
+```just
+parallel:
+  #!/usr/bin/env -S parallel --shebang --ungroup --jobs {{ num_cpus() }}
+  echo task 1 start; sleep 3; echo task 1 done
+  echo task 2 start; sleep 3; echo task 2 done
+  echo task 3 start; sleep 3; echo task 3 done
+  echo task 4 start; sleep 3; echo task 4 done
+```
+
 ### Shell 别名
 
 为了快速运行命令, 可以把 `alias j=just` 放在你的 Shell 配置文件中。
