@@ -6,6 +6,7 @@ impl Compiler {
   pub(crate) fn compile<'src>(
     loader: &'src Loader,
     root: &Path,
+    unstable: bool,
   ) -> RunResult<'src, Compilation<'src>> {
     let mut asts = HashMap::<PathBuf, Ast>::new();
     let mut loaded = Vec::new();
@@ -30,6 +31,16 @@ impl Compiler {
 
       paths.insert(current.path.clone(), relative.into());
       srcs.insert(current.path.clone(), src);
+
+      let ast_unstable = ast.items.iter().any(|item| {
+        matches!(
+          item,
+          Item::Set(Set {
+            name: _,
+            value: Setting::Unstable(true)
+          })
+        )
+      });
 
       for item in &mut ast.items {
         match item {
@@ -64,7 +75,7 @@ impl Compiler {
           }
           Item::Import {
             relative,
-            absolute,
+            absolute_paths,
             optional,
             path,
           } => {
@@ -75,14 +86,60 @@ impl Compiler {
               .join(Self::expand_tilde(&relative.cooked)?)
               .lexiclean();
 
-            if import.is_file() {
+            let has_glob = import.as_os_str().as_encoded_bytes().contains(&b'*');
+
+            if has_glob {
+              if !(unstable || ast_unstable) {
+                return Err(Error::UnstableFeature {
+                  unstable_feature: UnstableFeature::ImportPathGlob,
+                });
+              }
+
+              let import_base_str = import
+                .to_str()
+                .ok_or_else(|| Error::ImportGlobUnicode { path: *path })?;
+              let glob_options = glob::MatchOptions {
+                case_sensitive: true,
+                require_literal_separator: true,
+                require_literal_leading_dot: false,
+              };
+              let import_paths =
+                glob::glob_with(import_base_str, glob_options).map_err(|pattern_err| {
+                  Error::ImportGlobPattern {
+                    pattern_err,
+                    path: *path,
+                  }
+                })?;
+              for import in import_paths {
+                let import = import.map_err(|glob_err| Error::ImportGlobIteration {
+                  path: *path,
+                  glob_err,
+                })?;
+
+                if import.is_file() {
+                  if current.file_path.contains(&import) {
+                    return Err(Error::CircularImport {
+                      current: current.path,
+                      import,
+                    });
+                  }
+                  absolute_paths.push(import.clone());
+                  stack.push(current.import(import, path.offset));
+                } else if import.is_dir() {
+                  return Err(Error::ImportGlobDirectory {
+                    import,
+                    path: *path,
+                  });
+                }
+              }
+            } else if import.is_file() {
               if current.file_path.contains(&import) {
                 return Err(Error::CircularImport {
                   current: current.path,
                   import,
                 });
               }
-              *absolute = Some(import.clone());
+              absolute_paths.push(import.clone());
               stack.push(current.import(import, path.offset));
             } else if !*optional {
               return Err(Error::MissingImportFile { path: *path });
@@ -267,7 +324,7 @@ recipe_b: recipe_c
     let loader = Loader::new();
 
     let justfile_a_path = tmp.path().join("justfile");
-    let compilation = Compiler::compile(&loader, &justfile_a_path).unwrap();
+    let compilation = Compiler::compile(&loader, &justfile_a_path, false).unwrap();
 
     assert_eq!(compilation.root_src(), justfile_a);
   }
@@ -284,12 +341,91 @@ recipe_b: recipe_c
     let loader = Loader::new();
 
     let justfile_a_path = tmp.path().join("justfile");
-    let loader_output = Compiler::compile(&loader, &justfile_a_path).unwrap_err();
+    let loader_output = Compiler::compile(&loader, &justfile_a_path, false).unwrap_err();
 
     assert_matches!(loader_output, Error::CircularImport { current, import }
       if current == tmp.path().join("subdir").join("b").lexiclean() &&
       import == tmp.path().join("justfile").lexiclean()
     );
+  }
+
+  #[test]
+  fn glob_imports() {
+    let justfile_top = r#"
+import "./subdir/*.just"
+          "#;
+    let justfile_a = r"
+a:
+    ";
+    let justfile_b = r"
+b:
+             ";
+    let unused_justfile = r"
+x:
+             ";
+    let tmp = temptree! {
+      justfile: justfile_top,
+      subdir: {
+        "a.just": justfile_a,
+        "b.just": justfile_b,
+        unusued: unused_justfile,
+      }
+    };
+    let loader = Loader::new();
+    let justfile_path = tmp.path().join("justfile");
+    let compilation = Compiler::compile(&loader, &justfile_path, true).unwrap();
+    let imported_files: HashSet<&PathBuf> = compilation.srcs.keys().collect();
+    assert_eq!(
+      imported_files,
+      [
+        justfile_path,
+        tmp.path().join("subdir/a.just"),
+        tmp.path().join("subdir/b.just")
+      ]
+      .iter()
+      .collect()
+    );
+  }
+
+  #[test]
+  fn malformed_glob_imports() {
+    let justfile = r#"
+import "./subdir/****.just"
+    "#;
+    let tmp = temptree! {
+        justfile: justfile,
+    };
+    let loader = Loader::new();
+    let justfile_path = tmp.path().join("justfile");
+    let error = Compiler::compile(&loader, &justfile_path, true).unwrap_err();
+    let expected = "error: Invalid glob pattern: Pattern syntax error";
+    let actual = error.color_display(Color::never()).to_string();
+    assert!(actual.contains(expected), "Actual: {actual}");
+  }
+
+  #[test]
+  fn glob_import_match_dir_errors() {
+    let justfile_top = r#"
+import "./subdir/*"
+          "#;
+    let justfile_a = r"
+a:
+    ";
+    let tmp = temptree! {
+      justfile: justfile_top,
+      subdir: {
+        "a.just": justfile_a,
+        subsubdir: {
+
+        }
+      }
+    };
+    let loader = Loader::new();
+    let justfile_path = tmp.path().join("justfile");
+    let error = Compiler::compile(&loader, &justfile_path, true).unwrap_err();
+    let expected = "error: A glob import cannot match a directory";
+    let actual = error.color_display(Color::never()).to_string();
+    assert!(actual.contains(expected), "Actual: {actual}");
   }
 
   #[test]

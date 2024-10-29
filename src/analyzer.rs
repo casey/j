@@ -52,9 +52,9 @@ impl<'run, 'src> Analyzer<'run, 'src> {
             self.assignments.push(assignment);
           }
           Item::Comment(_) => (),
-          Item::Import { absolute, .. } => {
-            if let Some(absolute) = absolute {
-              stack.push(asts.get(absolute).unwrap());
+          Item::Import { absolute_paths, .. } => {
+            for path in absolute_paths {
+              stack.push(asts.get(path).unwrap());
             }
           }
           Item::Module {

@@ -149,7 +149,7 @@ impl Subcommand {
     loader: &'src Loader,
     search: &Search,
   ) -> RunResult<'src, Compilation<'src>> {
-    let compilation = Compiler::compile(loader, &search.justfile)?;
+    let compilation = Compiler::compile(loader, &search.justfile, config.unstable)?;
 
     compilation.justfile.check_unstable(config)?;
 
