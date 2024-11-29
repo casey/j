@@ -46,6 +46,14 @@ impl SignalHandler {
       process::exit(128 + signal.number());
     }
 
+    #[cfg(any(
+      target_os = "dragonfly",
+      target_os = "freebsd",
+      target_os = "ios",
+      target_os = "macos",
+      target_os = "netbsd",
+      target_os = "openbsd",
+    ))]
     if signal != Signal::Info && self.caught.is_none() {
       self.caught = Some(signal);
     }
@@ -60,6 +68,14 @@ impl SignalHandler {
           nix::sys::signal::kill(child, Some(Signal::Terminate.into())).ok();
         }
       }
+      #[cfg(any(
+        target_os = "dragonfly",
+        target_os = "freebsd",
+        target_os = "ios",
+        target_os = "macos",
+        target_os = "netbsd",
+        target_os = "openbsd",
+      ))]
       Signal::Info => {
         // todo: print pid
         if self.children.is_empty() {

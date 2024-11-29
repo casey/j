@@ -4,6 +4,14 @@ use super::*;
 #[repr(i32)]
 pub(crate) enum Signal {
   Hangup = libc::SIGHUP,
+  #[cfg(any(
+    target_os = "dragonfly",
+    target_os = "freebsd",
+    target_os = "ios",
+    target_os = "macos",
+    target_os = "netbsd",
+    target_os = "openbsd",
+  ))]
   Info = libc::SIGINFO,
   Interrupt = libc::SIGINT,
   Quit = libc::SIGQUIT,
@@ -13,6 +21,14 @@ pub(crate) enum Signal {
 impl Signal {
   pub(crate) const ALL: [Signal; 5] = [
     Signal::Hangup,
+    #[cfg(any(
+      target_os = "dragonfly",
+      target_os = "freebsd",
+      target_os = "ios",
+      target_os = "macos",
+      target_os = "netbsd",
+      target_os = "openbsd",
+    ))]
     Signal::Info,
     Signal::Interrupt,
     Signal::Quit,
@@ -31,6 +47,14 @@ impl Display for Signal {
       "{}",
       match self {
         Signal::Hangup => "SIGHUP",
+        #[cfg(any(
+          target_os = "dragonfly",
+          target_os = "freebsd",
+          target_os = "ios",
+          target_os = "macos",
+          target_os = "netbsd",
+          target_os = "openbsd",
+        ))]
         Signal::Info => "SIGINFO",
         Signal::Interrupt => "SIGINT",
         Signal::Quit => "SIGQUIT",
@@ -44,6 +68,14 @@ impl From<Signal> for nix::sys::signal::Signal {
   fn from(signal: Signal) -> Self {
     match signal {
       Signal::Hangup => Self::SIGHUP,
+      #[cfg(any(
+        target_os = "dragonfly",
+        target_os = "freebsd",
+        target_os = "ios",
+        target_os = "macos",
+        target_os = "netbsd",
+        target_os = "openbsd",
+      ))]
       Signal::Info => Self::SIGINFO,
       Signal::Interrupt => Self::SIGINT,
       Signal::Quit => Self::SIGQUIT,
@@ -58,6 +90,14 @@ impl TryFrom<u8> for Signal {
   fn try_from(n: u8) -> Result<Signal, Self::Error> {
     match n.into() {
       libc::SIGHUP => Ok(Signal::Hangup),
+      #[cfg(any(
+        target_os = "dragonfly",
+        target_os = "freebsd",
+        target_os = "ios",
+        target_os = "macos",
+        target_os = "netbsd",
+        target_os = "openbsd",
+      ))]
       libc::SIGINFO => Ok(Signal::Info),
       libc::SIGINT => Ok(Signal::Interrupt),
       libc::SIGQUIT => Ok(Signal::Quit),
