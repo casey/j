@@ -9,6 +9,9 @@ use {
 static WRITE: AtomicI32 = AtomicI32::new(0);
 
 fn die(message: &str) -> ! {
+  // Safety:
+  //
+  // Standard error is open for the duration of the program.
   const STDERR: BorrowedFd = unsafe { BorrowedFd::borrow_raw(libc::STDERR_FILENO) };
 
   nix::unistd::write(STDERR, b"error: ").ok();
@@ -25,10 +28,13 @@ extern "C" fn handler(signal: libc::c_int) {
     die("unexpected signal");
   };
 
+  // SAFETY:
+  //
+  // `WRITE` is initialized before the signal handler can run and remains open
+  // for the duration of the program.
   let fd = unsafe { BorrowedFd::borrow_raw(WRITE.load(atomic::Ordering::Relaxed)) };
 
   if let Err(err) = nix::unistd::write(fd, &[signal]) {
-    let Ok(err) = Errno::try_from(err);
     die(err.desc());
   }
 
@@ -60,6 +66,11 @@ impl Signals {
     );
 
     for signal in Signal::ALL {
+      // SAFETY:
+      //
+      // This is the only place we modify signal handlers, and
+      // `nix::sys::signal::sigaction` is unsafe only if an invalid signal
+      // handler has already been installed.
       unsafe {
         nix::sys::signal::sigaction(signal.into(), &sa)?;
       }

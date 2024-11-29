@@ -1,34 +1,9 @@
 // todo:
-// - probably first is forward sigterm to child
-// - document in readme
-
-// - situations:
-//   - kill w/sigterm, sighup, sigint, sigquit
-//   - process cooperates / progress ignores signals
-//   - ctrl-c, close terminal
-//   - local, remote without controlling terminal, remote with controlling terminal, remote in interactive shell
-//   - recipe line, recipe script, --command, backtick
-//
-// - INT, HUP, TERM, QUIT:
-//   - if no children, exit immediately
-//   - if children, wait for them to finish, exit after they finish
-// - QUIT: exit immediately?
-// - TERM: forward to children
-// - INFO: print info
-// - get rid of or adapt interrupt tests
-//
-// - how to test?
-//   - run just
-//   - send signal
-//   - waits for child
-//   - child returns
-//
+// - create issue for sighup handling: can we detect when we receive sighup and are the only recipient?
 // - tests:
-//   - child returns failure after signal
-//     - just returns signal number
-//   - child returns success after signal
-//     - just returns signal number
-//     - does not continue
-//   - TERM
-//     - signal forwarded to child
-//   - INFO prints info
+//   - just terminates immediately on receipt of fatal signal if no child process is running
+//   - just reports correct error if child process is terminated with fatal signal and indicates failure
+//   - just still terminates if child process is terminated with fatal signal and reports success
+//   - just prints info receipt of SIGINFO
+//   - contexts: recipe line, recipe script, --command, backtick (any others?)
+// - get rid of old interrupt tests

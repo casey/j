@@ -73,6 +73,7 @@ struct_excessive_bools = "allow"
 struct_field_names = "allow"
 too_many_arguments = "allow"
 too_many_lines = "allow"
+undocumented_unsafe_blocks = "deny"
 unnecessary_wraps = "allow"
 wildcard_imports = "allow"
 

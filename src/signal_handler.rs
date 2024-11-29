@@ -94,7 +94,18 @@ impl SignalHandler {
       Ok(child) => child,
     };
 
-    let pid = Pid::from_raw(child.id() as i32);
+    let pid = match child.id().try_into() {
+      Err(err) => {
+        return (
+          Err(io::Error::new(
+            io::ErrorKind::Other,
+            format!("invalid child PID: {err}"),
+          )),
+          None,
+        )
+      }
+      Ok(pid) => Pid::from_raw(pid),
+    };
 
     instance.children.insert(pid, command);
 

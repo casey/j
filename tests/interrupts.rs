@@ -2,7 +2,7 @@ use super::*;
 
 fn kill(process_id: u32) {
   nix::sys::signal::kill(
-    nix::unistd::Pid::from_raw(process_id as i32),
+    nix::unistd::Pid::from_raw(process_id.try_into().unwrap()),
     nix::sys::signal::Signal::SIGINT,
   )
   .unwrap();

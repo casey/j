@@ -3814,6 +3814,55 @@ the
 [`chrono` library docs](https://docs.rs/chrono/latest/chrono/format/strftime/index.html)
 for details.
 
+### Signal Handling
+
+[Signals](https://en.wikipedia.org/wiki/Signal_(IPC)) are messsages sent to
+running programs to trigger specific behavior. For example, the `SIGINT` signal
+is sent to all processes in the forground process group when `ctrl-c` is typed
+at the terminal,
+
+`just` tries to exit when requested and avoid leaving behind running child
+proccesses, two goals which are somewhat in conflict.
+
+If `just` exits leaving behind child processes, the user will have no recourse
+but to `ps aux | grep` for the children and manually `kill` them, a tedious
+endevour.
+
+#### Fatal Signals
+
+`SIGHUP`, `SIGINT`, and `SIGQUIT` are generated when the user closes the
+terminal, types `ctrl-c`, or types `ctrl-\`, respectively, and are sent to all
+processes in the foreground process group.
+
+`SIGTERM` is the default signal sent by the `kill` command, and is delivered
+only to its intended victim.
+
+When a child process is not running, `just` will exit immediately on receipt of
+any of the above signals.
+
+When a child process *is* running, `just` will wait until it terminates, to
+avoid leaving it behind.
+
+Additionally, on receipt of `SIGTERM`, `just` will forward `SIGTERM` to any
+running children<sup>master</sup>, since unlike other fatal signals, `SIGTERM`,
+was likely sent to `just` alone.
+
+Regardless of whether a child process terminates successfully after `just`
+receives a fatal signal, `just` halts execution.
+
+#### `SIGINFO`
+
+`SIGINFO` is sent to all processes in the foreground process group when the
+user types `ctrl-t`.
+
+`just` responds by printing a list of all child process IDs and
+commands<sup>master</sup>.
+
+#### Windows
+
+On Windows, `just` behaves as if it had received `SIGINT` when the user types
+`ctrl-c`. Other signals are unsupported.
+
 Changelog
 ---------
 
