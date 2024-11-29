@@ -11,7 +11,7 @@ static WRITE: AtomicI32 = AtomicI32::new(0);
 fn die(message: &str) -> ! {
   const STDERR: BorrowedFd = unsafe { BorrowedFd::borrow_raw(libc::STDERR_FILENO) };
 
-  nix::unistd::write(STDERR, b"just: ").ok();
+  nix::unistd::write(STDERR, b"error: ").ok();
   nix::unistd::write(STDERR, message.as_bytes()).ok();
   nix::unistd::write(STDERR, b"\n").ok();
 
