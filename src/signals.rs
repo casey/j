@@ -65,7 +65,7 @@ impl Signals {
       SigSet::empty(),
     );
 
-    for signal in Signal::ALL {
+    for &signal in Signal::ALL {
       // SAFETY:
       //
       // This is the only place we modify signal handlers, and
