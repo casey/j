@@ -1,12 +1,11 @@
-use {
-  super::*,
-  std::time::{Duration, Instant},
-};
+use super::*;
 
 fn kill(process_id: u32) {
-  unsafe {
-    libc::kill(process_id.try_into().unwrap(), libc::SIGINT);
-  }
+  nix::sys::signal::kill(
+    nix::unistd::Pid::from_raw(process_id as i32),
+    nix::sys::signal::Signal::SIGINT,
+  )
+  .unwrap();
 }
 
 fn interrupt_test(arguments: &[&str], justfile: &str) {

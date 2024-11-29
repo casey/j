@@ -23,6 +23,7 @@ pub(crate) use {
     path::{Path, PathBuf, MAIN_SEPARATOR, MAIN_SEPARATOR_STR},
     process::{Command, Stdio},
     str,
+    time::{Duration, Instant},
   },
   tempfile::TempDir,
   temptree::{temptree, tree, Tree},
@@ -108,6 +109,7 @@ mod shebang;
 mod shell;
 mod shell_expansion;
 mod show;
+mod signals;
 mod slash_operator;
 mod string;
 mod subsequents;

@@ -103,7 +103,7 @@ fn write_error() {
   // skip this test if running as root, since root can write files even if
   // permissions would otherwise forbid it
   #[cfg(not(windows))]
-  if unsafe { libc::getuid() } == 0 {
+  if nix::unistd::getuid() == nix::unistd::ROOT {
     return;
   }
 

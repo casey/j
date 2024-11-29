@@ -289,7 +289,9 @@ impl<'src, D> Recipe<'src, D> {
         &context.module.unexports,
       );
 
-      match InterruptHandler::guard(|| cmd.status()) {
+      let (result, caught) = cmd.status_guard();
+
+      match result {
         Ok(exit_status) => {
           if let Some(code) = exit_status.code() {
             if code != 0 && !infallible_line {
@@ -315,6 +317,10 @@ impl<'src, D> Recipe<'src, D> {
           });
         }
       };
+
+      if let Some(signal) = caught {
+        return Err(Error::Interrupted { signal });
+      }
     }
   }
 
@@ -433,7 +439,9 @@ impl<'src, D> Recipe<'src, D> {
     );
 
     // run it!
-    match InterruptHandler::guard(|| command.status()) {
+    let (result, caught) = command.status_guard();
+
+    match result {
       Ok(exit_status) => exit_status.code().map_or_else(
         || Err(error_from_signal(self.name(), None, exit_status)),
         |code| {
@@ -448,9 +456,15 @@ impl<'src, D> Recipe<'src, D> {
             })
           }
         },
-      ),
-      Err(io_error) => Err(executor.error(io_error, self.name())),
+      )?,
+      Err(io_error) => return Err(executor.error(io_error, self.name())),
     }
+
+    if let Some(signal) = caught {
+      return Err(Error::Interrupted { signal });
+    }
+
+    Ok(())
   }
 
   pub(crate) fn groups(&self) -> BTreeSet<String> {

@@ -116,6 +116,9 @@ pub(crate) enum Error<'src> {
   Internal {
     message: String,
   },
+  Interrupted {
+    signal: Signal,
+  },
   Io {
     recipe: &'src str,
     io_error: io::Error,
@@ -291,6 +294,7 @@ impl ColorDisplay for Error<'_> {
         OutputError::Code(code) => write!(f, "Backtick failed with exit code {code}")?,
         OutputError::Signal(signal) => write!(f, "Backtick was terminated by signal {signal}")?,
         OutputError::Unknown => write!(f, "Backtick failed for an unknown reason")?,
+        OutputError::Interrupted(signal) => write!(f, "Backtick succeeded but `just` was interrupted by signal {signal}")?,
         OutputError::Io(io_error) => match io_error.kind() {
             io::ErrorKind::NotFound => write!(f, "Backtick could not be run because just could not find the shell:\n{io_error}"),
             io::ErrorKind::PermissionDenied => write!(f, "Backtick could not be run because just could not run the shell:\n{io_error}"),
@@ -340,6 +344,7 @@ impl ColorDisplay for Error<'_> {
         OutputError::Code(code) => write!(f, "Cygpath failed with exit code {code} while translating recipe `{recipe}` shebang interpreter path")?,
         OutputError::Signal(signal) => write!(f, "Cygpath terminated by signal {signal} while translating recipe `{recipe}` shebang interpreter path")?,
         OutputError::Unknown => write!(f, "Cygpath experienced an unknown failure while translating recipe `{recipe}` shebang interpreter path")?,
+        OutputError::Interrupted(signal) => write!(f, "Cygpath succeeded but `just` was interrupted by {signal}")?,
         OutputError::Io(io_error) => {
           match io_error.kind() {
             io::ErrorKind::NotFound => write!(f, "Could not find `cygpath` executable to translate recipe `{recipe}` shebang interpreter path:\n{io_error}"),
@@ -401,6 +406,9 @@ impl ColorDisplay for Error<'_> {
       Internal { message } => {
         write!(f, "Internal runtime error, this may indicate a bug in just: {message} \
                    consider filing an issue: https://github.com/casey/just/issues/new")?;
+      }
+      Interrupted { signal } => {
+        write!(f, "Interrupted by {signal}")?;
       }
       Io { recipe, io_error } => {
         match io_error.kind() {
