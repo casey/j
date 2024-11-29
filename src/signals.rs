@@ -25,12 +25,11 @@ extern "C" fn handler(signal: libc::c_int) {
     die("unexpected signal");
   };
 
-  let buffer = &[signal as u8];
-
   let fd = unsafe { BorrowedFd::borrow_raw(WRITE.load(atomic::Ordering::Relaxed)) };
 
-  if nix::unistd::write(fd, buffer).is_err() {
-    die(Errno::last().desc());
+  if let Err(err) = nix::unistd::write(fd, &[signal]) {
+    let Ok(err) = Errno::try_from(err);
+    die(err.desc());
   }
 
   errno.set();
