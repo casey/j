@@ -46,6 +46,7 @@ impl PlatformInterface for Platform {
   }
 
   fn install_signal_handler<T: Fn(Signal) + Send + 'static>(handler: T) -> RunResult<'static> {
+    // todo: name thread
     thread::spawn(move || {
       // todo: handle errors?
       for signal in Signals::new().unwrap() {
