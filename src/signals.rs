@@ -8,37 +8,32 @@ use {
 
 static WRITE: AtomicI32 = AtomicI32::new(0);
 
-extern "C" fn handler(signal: libc::c_int) {
-  let last = Errno::last();
+fn die(message: &str) -> ! {
+  const STDERR: BorrowedFd = unsafe { BorrowedFd::borrow_raw(libc::STDERR_FILENO) };
 
-  let fd = WRITE.load(atomic::Ordering::Relaxed);
+  nix::unistd::write(STDERR, b"just: ").ok();
+  nix::unistd::write(STDERR, message.as_bytes()).ok();
+  nix::unistd::write(STDERR, b"\n").ok();
 
-  let fd = unsafe { BorrowedFd::borrow_raw(fd) };
-
-  if let Err(err) = nix::unistd::write(fd, &[signal as u8]) {
-    // there are few times in life when one is well and truly fucked. this is
-    // one.
-  }
-
-  last.set();
+  process::abort();
 }
 
-extern "C" fn handler_old(signal: libc::c_int) {
-  let errno = unsafe { *libc::__error() };
+extern "C" fn handler(signal: libc::c_int) {
+  let errno = Errno::last();
+
+  let Ok(signal) = u8::try_from(signal) else {
+    die("unexpected signal");
+  };
 
   let buffer = &[signal as u8];
 
-  let fd = WRITE.load(atomic::Ordering::Relaxed);
+  let fd = unsafe { BorrowedFd::borrow_raw(WRITE.load(atomic::Ordering::Relaxed)) };
 
-  unsafe {
-    libc::write(fd, buffer.as_ptr().cast(), buffer.len());
+  if nix::unistd::write(fd, buffer).is_err() {
+    die(Errno::last().desc());
   }
 
-  // todo: should we abort if errno is bad?
-
-  unsafe {
-    *libc::__error() = errno;
-  }
+  errno.set();
 }
 
 pub(crate) struct Signals(File);

@@ -56,7 +56,8 @@ impl SignalHandler {
       Signal::Terminate => {
         for &child in self.children.keys() {
           eprintln!("sending sigterm to {child}");
-          nix::sys::signal::kill(child, Some(Signal::Terminate.into()));
+          // todo: handle error
+          nix::sys::signal::kill(child, Some(Signal::Terminate.into())).ok();
         }
       }
       Signal::Info => {
