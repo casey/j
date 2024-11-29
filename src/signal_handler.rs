@@ -63,8 +63,9 @@ impl SignalHandler {
       // processes and wait for them to exit
       Signal::Terminate => {
         for &child in self.children.keys() {
-          eprintln!("sending sigterm to {child}");
-          // todo: handle error
+          if self.verbosity.loquacious() {
+            eprintln!("just: sending SIGTERM to child process {child}");
+          }
           nix::sys::signal::kill(child, Some(Signal::Terminate.into())).ok();
         }
       }
@@ -77,12 +78,15 @@ impl SignalHandler {
         target_os = "openbsd",
       ))]
       Signal::Info => {
-        // todo: print pid
         if self.children.is_empty() {
           eprintln!("just: no child processes");
         } else {
-          // todo: handle plural correctly
-          let mut message = format!("just: {} child processes:\n", self.children.len());
+          let n = self.children.len();
+
+          let mut message = format!(
+            "just: {n} child {}:\n",
+            if n == 1 { "process" } else { "processes" }
+          );
 
           for (&child, command) in &self.children {
             message.push_str(&format!("{child}: {command:?}\n"));
