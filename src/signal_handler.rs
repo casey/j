@@ -59,16 +59,11 @@ impl SignalHandler {
     }
 
     match signal {
-      // SIGTERM is the default signal sent by kill. forward it to child
-      // processes and wait for them to exit
-      Signal::Terminate => {
-        for &child in self.children.keys() {
-          if self.verbosity.loquacious() {
-            eprintln!("just: sending SIGTERM to child process {child}");
-          }
-          nix::sys::signal::kill(child, Some(Signal::Terminate.into())).ok();
-        }
-      }
+      // SIGHUP, SIGINT, and SIGQUIT are normally sent on terminal close,
+      // ctrl-c, and ctrl-\, respectively, and are sent to all processes in the
+      // foreground process group. this includes child processes, so we ignore
+      // the signal and rely on them to exit
+      Signal::Hangup | Signal::Interrupt | Signal::Quit => {}
       #[cfg(any(
         target_os = "dragonfly",
         target_os = "freebsd",
@@ -78,13 +73,14 @@ impl SignalHandler {
         target_os = "openbsd",
       ))]
       Signal::Info => {
+        let id = process::id();
         if self.children.is_empty() {
-          eprintln!("just: no child processes");
+          eprintln!("just {id}: no child processes");
         } else {
           let n = self.children.len();
 
           let mut message = format!(
-            "just: {n} child {}:\n",
+            "just {id}: {n} child {}:\n",
             if n == 1 { "process" } else { "processes" }
           );
 
@@ -95,11 +91,16 @@ impl SignalHandler {
           eprint!("{message}");
         }
       }
-      // SIGHUP, SIGINT, and SIGQUIT are normally sent on terminal close,
-      // ctrl-c, and ctrl-\, respectively, and are sent to all processes in the
-      // foreground process group. this includes child processes, so we ignore
-      // the signal and rely on them to exit
-      Signal::Hangup | Signal::Interrupt | Signal::Quit => {}
+      // SIGTERM is the default signal sent by kill. forward it to child
+      // processes and wait for them to exit
+      Signal::Terminate => {
+        for &child in self.children.keys() {
+          if self.verbosity.loquacious() {
+            eprintln!("just: sending SIGTERM to child process {child}");
+          }
+          nix::sys::signal::kill(child, Some(Signal::Terminate.into())).ok();
+        }
+      }
     }
   }
 
