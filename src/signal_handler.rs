@@ -62,7 +62,7 @@ impl SignalHandler {
       // SIGHUP, SIGINT, and SIGQUIT are normally sent on terminal close,
       // ctrl-c, and ctrl-\, respectively, and are sent to all processes in the
       // foreground process group. this includes child processes, so we ignore
-      // the signal and rely on them to exit
+      // the signal and wait for them to exit
       Signal::Hangup | Signal::Interrupt | Signal::Quit => {}
       #[cfg(any(
         target_os = "dragonfly",
