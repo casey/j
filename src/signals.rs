@@ -11,7 +11,7 @@ const INVALID_FILENO: i32 = -1;
 static WRITE: AtomicI32 = AtomicI32::new(INVALID_FILENO);
 
 fn die(message: &str) -> ! {
-  // Safety:
+  // SAFETY:
   //
   // Standard error is open for the duration of the program.
   const STDERR: BorrowedFd = unsafe { BorrowedFd::borrow_raw(libc::STDERR_FILENO) };
