@@ -6,7 +6,9 @@ use {
   },
 };
 
-static WRITE: AtomicI32 = AtomicI32::new(0);
+const INVALID_FILENO: i32 = -1;
+
+static WRITE: AtomicI32 = AtomicI32::new(INVALID_FILENO);
 
 fn die(message: &str) -> ! {
   // Safety:
@@ -49,7 +51,7 @@ impl Signals {
 
     if WRITE
       .compare_exchange(
-        0,
+        INVALID_FILENO,
         write.into_raw_fd(),
         atomic::Ordering::Relaxed,
         atomic::Ordering::Relaxed,
