@@ -16,9 +16,22 @@ fn die(message: &str) -> ! {
   // Standard error is open for the duration of the program.
   const STDERR: BorrowedFd = unsafe { BorrowedFd::borrow_raw(libc::STDERR_FILENO) };
 
-  nix::unistd::write(STDERR, b"error: ").ok();
-  nix::unistd::write(STDERR, message.as_bytes()).ok();
-  nix::unistd::write(STDERR, b"\n").ok();
+  let mut i = 0;
+  let mut buffer = [0; 512];
+
+  let mut append = |s: &str| {
+    let remaining = buffer.len() - i;
+    let n = s.len().min(remaining);
+    let end = i + n;
+    buffer[i..end].copy_from_slice(&s.as_bytes()[0..n]);
+    i = end;
+  };
+
+  append("error: ");
+  append(message);
+  append("\n");
+
+  nix::unistd::write(STDERR, &buffer[0..i]).ok();
 
   process::abort();
 }
