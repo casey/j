@@ -12,12 +12,12 @@ defaults:
   run:
     shell: bash
 
+env:
+  RUSTFLAGS: --deny warnings
+
 jobs:
   lint:
     runs-on: ubuntu-latest
-
-    env:
-      RUSTFLAGS: --deny warnings
 
     steps:
     - uses: actions/checkout@v4
@@ -43,11 +43,6 @@ jobs:
 
   pages:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    env:
-      RUSTFLAGS: --deny warnings
 
     steps:
     - uses: actions/checkout@v4
@@ -72,14 +67,6 @@ jobs:
         mdbook build book/en
         mdbook build book/zh
 
-    - name: Deploy Pages
-      uses: peaceiris/actions-gh-pages@v4
-      if: github.ref == 'refs/heads/master'
-      with:
-        github_token: ${{secrets.GITHUB_TOKEN}}
-        publish_branch: gh-pages
-        publish_dir: www
-
   test:
     strategy:
       matrix:
@@ -89,9 +76,6 @@ jobs:
         - windows-latest
 
     runs-on: ${{matrix.os}}
-
-    env:
-      RUSTFLAGS: --deny warnings
 
     steps:
     - uses: actions/checkout@v4

@@ -23,7 +23,10 @@
 
 `just` is a handy way to save and run project-specific commands.
 
-This readme is also available as a [book](https://just.systems/man/en/).
+This readme is also available as a [book](https://just.systems/man/en/). The
+book reflects the latest release, whereas the
+[readme on GitHub](https://github.com/casey/just/blob/master/README.md)
+reflects latest master.
 
 (中文文档在 [这里](https://github.com/casey/just/blob/master/README.中文.md),
 快看过来!)
@@ -48,9 +51,9 @@ Yay, all your tests passed!
   [`make`'s complexity and idiosyncrasies](#what-are-the-idiosyncrasies-of-make-that-just-avoids).
   No need for `.PHONY` recipes!
 
-- Linux, MacOS, and Windows are supported with no additional dependencies.
-  (Although if your system doesn't have an `sh`, you'll need to
-  [choose a different shell](#shell).)
+- Linux, MacOS, Windows, and other reasonable unices are supported with no
+  additional dependencies. (Although if your system doesn't have an `sh`,
+  you'll need to [choose a different shell](#shell).)
 
 - Errors are specific and informative, and syntax errors are reported along
   with their source context.
@@ -173,6 +176,11 @@ most Windows users.)
       <td><a href=https://pypi.org/>PyPI</a></td>
       <td><a href=https://pypi.org/project/rust-just/>rust-just</a></td>
       <td><code>pipx install rust-just</code></td>
+    </tr>
+    <tr>
+      <td><a href=https://snapcraft.io>Snap</a></td>
+      <td><a href=https://snapcraft.io/just>just</a></td>
+      <td><code>snap install --edge --classic just</code></td>
     </tr>
   </tbody>
 </table>
@@ -902,7 +910,7 @@ $ just foo
 ```
 
 You can override the working directory for a specific recipe with the
-`working-directory` attribute<sup>master</sup>:
+`working-directory` attribute<sup>1.38.0</sup>:
 
 ```just
 [working-directory: 'bar']
@@ -1434,6 +1442,10 @@ braces:
 
 ### Strings
 
+`'single'`, `"double"`, and `'''triple'''` quoted string literals are
+supported. Unlike in recipe bodies, `{{…}}` interpolations are not supported
+inside strings.
+
 Double-quoted strings support escape sequences:
 
 ```just
@@ -1633,11 +1645,11 @@ olleh := shell('import sys; print(sys.argv[2][::-1])', 'hello')
 
 #### Environment Variables
 
-- `env_var(key)` — Retrieves the environment variable with name `key`, aborting
+- `env(key)` — Retrieves the environment variable with name `key`, aborting
   if it is not present.
 
 ```just
-home_dir := env_var('HOME')
+home_dir := env('HOME')
 
 test:
   echo "{{home_dir}}"
@@ -1652,6 +1664,15 @@ $ just
   name `key`, returning `default` if it is not present.
 - `env(key)`<sup>1.15.0</sup> — Alias for `env_var(key)`.
 - `env(key, default)`<sup>1.15.0</sup> — Alias for `env_var_or_default(key, default)`.
+
+A default can be substituted for an empty environment variable value with the
+`||` operator, currently unstable:
+
+```just
+set unstable
+
+foo := env('FOO') || 'DEFAULT_VALUE'
+```
 
 #### Invocation Information
 
@@ -1830,6 +1851,8 @@ which will halt execution.
 - `path_exists(path)` - Returns `true` if the path points at an existing entity
   and `false` otherwise. Traverses symbolic links, and returns `false` if the
   path is inaccessible or points to a broken symlink.
+- `read(path)`<sup>master</sup> - Returns the content of file at `path` as
+  string.
 
 ##### Error Reporting
 
@@ -1889,14 +1912,20 @@ for details.
     @echo '{{ style("error") }}OH NO{{ NORMAL }}'
   ```
 
-##### XDG Directories<sup>1.23.0</sup>
+##### User Directories<sup>1.23.0</sup>
 
 These functions return paths to user-specific directories for things like
-configuration, data, caches, executables, and the user's home directory. These
-functions follow the
-[XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html),
-and are implemented with the
-[`dirs`](https://docs.rs/dirs/latest/dirs/index.html) crate.
+configuration, data, caches, executables, and the user's home directory.
+
+On Unix, these functions follow the
+[XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html).
+
+On MacOS and Windows, these functions return the system-specified user-specific
+directories. For example, `cache_directory()` returns `~/Library/Caches` on
+MacOS and `{FOLDERID_LocalAppData}` on Windows.
+
+See the [`dirs`](https://docs.rs/dirs/latest/dirs/index.html) crate for more
+details.
 
 - `cache_directory()` - The user-specific cache directory.
 - `config_directory()` - The user-specific configuration directory.
@@ -1905,6 +1934,20 @@ and are implemented with the
 - `data_local_directory()` - The local user-specific data directory.
 - `executable_directory()` - The user-specific executable directory.
 - `home_directory()` - The user's home directory.
+
+If you would like to use XDG base directories on all platforms you can use the
+`env(…)` function with the appropriate environment variable and fallback,
+although note that the XDG specification requires ignoring non-absolute paths,
+so for full compatibility with spec-compliant applications, you would need to
+do:
+
+```just
+xdg_config_dir := if env('XDG_CONFIG_HOME', '') =~ '^/' {
+  env('XDG_CONFIG_HOME')
+} else {
+  home_directory() / '.config'
+}
+```
 
 ### Constants
 
@@ -1986,13 +2029,14 @@ change their behavior.
 | `[no-cd]`<sup>1.9.0</sup> | recipe | Don't change directory before executing recipe. |
 | `[no-exit-message]`<sup>1.7.0</sup> | recipe | Don't print an error message if recipe fails. |
 | `[no-quiet]`<sup>1.23.0</sup> | recipe | Override globally quiet recipes and always echo out the recipe. |
+| `[openbsd]`<sup>1.38.0</sup> | recipe | Enable recipe on OpenBSD. |
 | `[positional-arguments]`<sup>1.29.0</sup> | recipe | Turn on [positional arguments](#positional-arguments) for this recipe. |
 | `[private]`<sup>1.10.0</sup> | alias, recipe | Make recipe, alias, or variable private. See [Private Recipes](#private-recipes). |
 | `[script]`<sup>1.33.0</sup> | recipe | Execute recipe as script. See [script recipes](#script-recipes) for more details. |
 | `[script(COMMAND)]`<sup>1.32.0</sup> | recipe | Execute recipe as a script interpreted by `COMMAND`. See [script recipes](#script-recipes) for more details. |
 | `[unix]`<sup>1.8.0</sup> | recipe | Enable recipe on Unixes. (Includes MacOS). |
 | `[windows]`<sup>1.8.0</sup> | recipe | Enable recipe on Windows. |
-| `[working-directory(PATH)]`<sup>master</sup> | recipe | Set recipe working directory. `PATH` may be relative or absolute. If relative, it is interpreted relative to the default working directory. |
+| `[working-directory(PATH)]`<sup>1.38.0</sup> | recipe | Set recipe working directory. `PATH` may be relative or absolute. If relative, it is interpreted relative to the default working directory. |
 
 A recipe can have multiple attributes, either on multiple lines:
 
@@ -2787,6 +2831,41 @@ the final argument. For example, on Windows, if a recipe starts with `#! py`,
 the final command the OS runs will be something like
 `py C:\Temp\PATH_TO_SAVED_RECIPE_BODY`.
 
+### Python Recipes with `uv`
+
+[`uv`](https://github.com/astral-sh/uv) is an excellent cross-platform python
+project manager, written in Rust.
+
+Using the `[script]` attribute and `script-interpreter` setting, `just` can
+easily be configured to run Python recipes with `uv`:
+
+```just
+set unstable
+
+set script-interpreter := ['uv', 'run', '--script']
+
+[script]
+hello:
+  print("Hello from Python!")
+
+[script]
+goodbye:
+  # /// script
+  # requires-python = ">=3.11"
+  # dependencies=["sh"]
+  # ///
+  import sh
+  print(sh.echo("Goodbye from Python!"), end='')
+```
+
+Of course, a shebang also works:
+
+```just
+hello:
+  #!/usr/bin/env uv run --script
+  print("Hello from Python!")
+```
+
 ### Script Recipes
 
 Recipes with a `[script(COMMAND)]`<sup>1.32.0</sup> attribute are run as
@@ -3432,9 +3511,39 @@ and recipes defined after the `import` statement.
 Imported files can themselves contain `import`s, which are processed
 recursively.
 
-When `allow-duplicate-recipes` is set, recipes in parent modules override
-recipes in imports. In a similar manner, when `allow-duplicate-variables` is
-set, variables in parent modules override variables in imports.
+`allow-duplicate-recipes` and `allow-duplicate-variables` allow duplicate
+recipes and variables, respectively, to override each other, instead of
+producing an error.
+
+Within a module, later definitions override earlier definitions:
+
+```just
+set allow-duplicate-recipes
+
+foo:
+
+foo:
+  echo 'yes'
+```
+
+When `import`s are involved, things unfortunately get much more complicated and
+hard to explain.
+
+Shallower definitions always override deeper definitions, so recipes at the top
+level will override recipes in imports, and recipes in an import will override
+recipes in an import which itself imports those recipes.
+
+When two duplicate definitions are imported and are at the same depth, the one
+from the earlier import will override the one from the later import.
+
+This is because `just` uses a stack when processing imports, pushing imports
+onto the stack in source-order, and always processing the top of the stack
+next, so earlier imports are actually handled later by the compiler.
+
+This is definitely a bug, but since `just` has very strong backwards
+compatibility guarantees and we take enormous pains not to break anyone's
+`justfile`, we have created issue #2540 to discuss whether or not we can
+actually fix it.
 
 Imports may be made optional by putting a `?` after the `import` keyword:
 

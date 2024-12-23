@@ -107,13 +107,13 @@ pub(crate) enum CompileErrorKind<'src> {
     variable: &'src str,
   },
   UnexpectedCharacter {
-    expected: char,
+    expected: Vec<char>,
   },
   UnexpectedClosingDelimiter {
     close: Delimiter,
   },
   UnexpectedEndOfToken {
-    expected: char,
+    expected: Vec<char>,
   },
   UnexpectedToken {
     expected: Vec<TokenKind>,

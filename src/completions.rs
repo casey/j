@@ -97,33 +97,7 @@ const FISH_RECIPE_COMPLETIONS: &str = r#"function __fish_just_complete_recipes
         if string match -rq '(-f|--justfile)\s*=?(?<justfile>[^\s]+)' -- (string split -- ' -- ' (commandline -pc))[1]
           set -fx JUST_JUSTFILE "$justfile"
         end
-        just --list 2> /dev/null | tail -n +2 | awk '{
-        command = $1;
-        args = $0;
-        desc = "";
-        delim = "";
-        sub(/^[[:space:]]*[^[:space:]]*/, "", args);
-        gsub(/^[[:space:]]+|[[:space:]]+$/, "", args);
-
-        if (match(args, /#.*/)) {
-          desc = substr(args, RSTART+2, RLENGTH);
-          args = substr(args, 0, RSTART-1);
-          gsub(/^[[:space:]]+|[[:space:]]+$/, "", args);
-        }
-
-        gsub(/\+|=[`\'"][^`\'"]*[`\'"]/, "", args);
-        gsub(/ /, ",", args);
-
-        if (args != ""){
-          args = "Args: " args;
-        }
-
-        if (args != "" && desc != "") {
-          delim = "; ";
-        }
-
-        print command "\t" args delim desc
-  }'
+        printf "%s\n" (string split " " (just --summary))
 end
 
 # don't suggest files right off

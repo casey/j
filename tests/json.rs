@@ -31,7 +31,7 @@ struct Interpreter<'a> {
   command: &'a str,
 }
 
-#[derive(Debug, Default, PartialEq, Serialize)]
+#[derive(Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Module<'a> {
   aliases: BTreeMap<&'a str, Alias<'a>>,
@@ -44,6 +44,7 @@ struct Module<'a> {
   settings: Settings<'a>,
   unexports: Vec<&'a str>,
   warnings: Vec<&'a str>,
+  source: PathBuf,
 }
 
 #[derive(Debug, Default, Deserialize, PartialEq, Serialize)]
@@ -98,8 +99,26 @@ fn case(justfile: &str, expected: Module) {
   case_with_submodule(justfile, None, expected);
 }
 
+fn fix_source(dir: &Path, module: &mut Module) {
+  let filename = if module.source.as_os_str().is_empty() {
+    Path::new("justfile")
+  } else {
+    &module.source
+  };
+
+  module.source = if cfg!(target_os = "macos") {
+    dir.canonicalize().unwrap().join(filename)
+  } else {
+    dir.join(filename)
+  };
+
+  for module in module.modules.values_mut() {
+    fix_source(dir, module);
+  }
+}
+
 #[track_caller]
-fn case_with_submodule(justfile: &str, submodule: Option<(&str, &str)>, expected: Module) {
+fn case_with_submodule(justfile: &str, submodule: Option<(&str, &str)>, mut expected: Module) {
   let mut test = Test::new()
     .justfile(justfile)
     .args(["--dump", "--dump-format", "json"])
@@ -109,11 +128,11 @@ fn case_with_submodule(justfile: &str, submodule: Option<(&str, &str)>, expected
     test = test.write(path, source);
   }
 
+  fix_source(test.tempdir.path(), &mut expected);
+
   let actual = test.run().stdout;
 
-  let mut expected = serde_json::to_string(&expected).unwrap();
-  expected.push('\n');
-
+  let actual: Module = serde_json::from_str(actual.as_str()).unwrap();
   pretty_assertions::assert_eq!(actual, expected);
 }
 
@@ -776,6 +795,7 @@ fn module() {
         Module {
           doc: Some("hello"),
           first: Some("bar"),
+          source: "foo.just".into(),
           recipes: [(
             "bar",
             Recipe {
@@ -808,6 +828,7 @@ fn module_group() {
         Module {
           first: Some("bar"),
           groups: ["alpha"].into(),
+          source: "foo.just".into(),
           recipes: [(
             "bar",
             Recipe {

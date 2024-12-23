@@ -47,6 +47,10 @@ fn os() {
       [linux]
       foo:
         echo quxx
+
+      [openbsd]
+      foo:
+        echo bob
     ",
     )
     .stdout(if cfg!(target_os = "macos") {
@@ -55,6 +59,8 @@ fn os() {
       "baz\n"
     } else if cfg!(target_os = "linux") {
       "quxx\n"
+    } else if cfg!(target_os = "openbsd") {
+      "bob\n"
     } else {
       panic!("unexpected os family")
     })
@@ -64,6 +70,8 @@ fn os() {
       "echo baz\n"
     } else if cfg!(target_os = "linux") {
       "echo quxx\n"
+    } else if cfg!(target_os = "openbsd") {
+      "echo bob\n"
     } else {
       panic!("unexpected os family")
     })
@@ -75,10 +83,11 @@ fn all() {
   Test::new()
     .justfile(
       "
-      [macos]
-      [windows]
       [linux]
+      [macos]
+      [openbsd]
       [unix]
+      [windows]
       foo:
         echo bar
     ",

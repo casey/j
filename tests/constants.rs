@@ -48,14 +48,13 @@ fn constants_can_be_redefined() {
 fn constants_are_not_exported() {
   Test::new()
     .justfile(
-      "
+      r#"
         set export
 
         foo:
-          echo $HEXUPPER
-      ",
+          @'{{just_executable()}}' --request '{"environment-variable": "HEXUPPER"}'
+      "#,
     )
-    .stderr_regex(".*HEXUPPER: unbound variable.*")
-    .status(127)
+    .response(Response::EnvironmentVariable(None))
     .run();
 }

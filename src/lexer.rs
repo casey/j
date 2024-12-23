@@ -475,7 +475,7 @@ impl<'src> Lexer<'src> {
     match start {
       ' ' | '\t' => self.lex_whitespace(),
       '!' if self.rest().starts_with("!include") => Err(self.error(Include)),
-      '!' => self.lex_digraph('!', '=', BangEquals),
+      '!' => self.lex_choices('!', &[('=', BangEquals), ('~', BangTilde)], None),
       '#' => self.lex_comment(),
       '$' => self.lex_single(Dollar),
       '&' => self.lex_digraph('&', '&', AmpersandAmpersand),
@@ -486,7 +486,11 @@ impl<'src> Lexer<'src> {
       ',' => self.lex_single(Comma),
       '/' => self.lex_single(Slash),
       ':' => self.lex_colon(),
-      '=' => self.lex_choices('=', &[('=', EqualsEquals), ('~', EqualsTilde)], Equals),
+      '=' => self.lex_choices(
+        '=',
+        &[('=', EqualsEquals), ('~', EqualsTilde)],
+        Some(Equals),
+      ),
       '?' => self.lex_single(QuestionMark),
       '@' => self.lex_single(At),
       '[' => self.lex_delimiter(BracketL),
@@ -618,7 +622,7 @@ impl<'src> Lexer<'src> {
     &mut self,
     first: char,
     choices: &[(char, TokenKind)],
-    otherwise: TokenKind,
+    otherwise: Option<TokenKind>,
   ) -> CompileResult<'src> {
     self.presume(first)?;
 
@@ -629,7 +633,24 @@ impl<'src> Lexer<'src> {
       }
     }
 
-    self.token(otherwise);
+    if let Some(token) = otherwise {
+      self.token(token);
+    } else {
+      // Emit an unspecified token to consume the current character,
+      self.token(Unspecified);
+
+      let expected = choices.iter().map(|choice| choice.0).collect();
+
+      if self.at_eof() {
+        return Err(self.error(UnexpectedEndOfToken { expected }));
+      }
+
+      // …and advance past another character,
+      self.advance()?;
+
+      // …so that the error we produce highlights the unexpected character.
+      return Err(self.error(UnexpectedCharacter { expected }));
+    }
 
     Ok(())
   }
@@ -693,14 +714,18 @@ impl<'src> Lexer<'src> {
       self.token(Unspecified);
 
       if self.at_eof() {
-        return Err(self.error(UnexpectedEndOfToken { expected: right }));
+        return Err(self.error(UnexpectedEndOfToken {
+          expected: vec![right],
+        }));
       }
 
       // …and advance past another character,
       self.advance()?;
 
       // …so that the error we produce highlights the unexpected character.
-      Err(self.error(UnexpectedCharacter { expected: right }))
+      Err(self.error(UnexpectedCharacter {
+        expected: vec![right],
+      }))
     }
   }
 
@@ -949,6 +974,7 @@ mod tests {
       Asterisk => "*",
       At => "@",
       BangEquals => "!=",
+      BangTilde => "!~",
       BarBar => "||",
       BraceL => "{",
       BraceR => "}",
@@ -2261,9 +2287,10 @@ mod tests {
     column: 1,
     width:  0,
     kind:   UnexpectedEndOfToken {
-      expected: '&',
+      expected: vec!['&'],
     },
   }
+
   error! {
     name:   ampersand_unexpected,
     input:  "&%",
@@ -2272,7 +2299,19 @@ mod tests {
     column: 1,
     width:  1,
     kind:   UnexpectedCharacter {
-      expected: '&',
+      expected: vec!['&'],
+    },
+  }
+
+  error! {
+    name:   bang_eof,
+    input:  "!",
+    offset: 1,
+    line:   0,
+    column: 1,
+    width:  0,
+    kind:   UnexpectedEndOfToken {
+      expected: vec!['=', '~'],
     },
   }
 

@@ -87,6 +87,7 @@ pub(crate) fn get(name: &str) -> Option<Function> {
     "path_exists" => Unary(path_exists),
     "prepend" => Binary(prepend),
     "quote" => Unary(quote),
+    "read" => Unary(read),
     "replace" => Ternary(replace),
     "replace_regex" => Ternary(replace_regex),
     "semver_matches" => Binary(semver_matches),
@@ -262,6 +263,13 @@ fn encode_uri_component(_context: Context, s: &str) -> FunctionResult {
   Ok(percent_encoding::utf8_percent_encode(s, &PERCENT_ENCODE).to_string())
 }
 
+fn env(context: Context, key: &str, default: Option<&str>) -> FunctionResult {
+  match default {
+    Some(val) => env_var_or_default(context, key, val),
+    None => env_var(context, key),
+  }
+}
+
 fn env_var(context: Context, key: &str) -> FunctionResult {
   use std::env::VarError::*;
 
@@ -291,13 +299,6 @@ fn env_var_or_default(context: Context, key: &str, default: &str) -> FunctionRes
       "environment variable `{key}` not unicode: {os_string:?}"
     )),
     Ok(value) => Ok(value),
-  }
-}
-
-fn env(context: Context, key: &str, default: Option<&str>) -> FunctionResult {
-  match default {
-    Some(val) => env_var_or_default(context, key, val),
-    None => env_var(context, key),
   }
 }
 
@@ -446,50 +447,23 @@ fn lowercase(_context: Context, s: &str) -> FunctionResult {
 }
 
 fn module_directory(context: Context) -> FunctionResult {
-  context
-    .evaluator
-    .context
-    .search
-    .justfile
-    .parent()
-    .unwrap()
-    .join(&context.evaluator.context.module.source)
-    .parent()
-    .unwrap()
-    .to_str()
-    .map(str::to_owned)
-    .ok_or_else(|| {
-      format!(
-        "Module directory is not valid unicode: {}",
-        context
-          .evaluator
-          .context
-          .module
-          .source
-          .parent()
-          .unwrap()
-          .display(),
-      )
-    })
+  let module_directory = context.evaluator.context.module.source.parent().unwrap();
+  module_directory.to_str().map(str::to_owned).ok_or_else(|| {
+    format!(
+      "Module directory is not valid unicode: {}",
+      module_directory.display(),
+    )
+  })
 }
 
 fn module_file(context: Context) -> FunctionResult {
-  context
-    .evaluator
-    .context
-    .search
-    .justfile
-    .parent()
-    .unwrap()
-    .join(&context.evaluator.context.module.source)
-    .to_str()
-    .map(str::to_owned)
-    .ok_or_else(|| {
-      format!(
-        "Module file path is not valid unicode: {}",
-        context.evaluator.context.module.source.display(),
-      )
-    })
+  let module_file = &context.evaluator.context.module.source;
+  module_file.to_str().map(str::to_owned).ok_or_else(|| {
+    format!(
+      "Module file path is not valid unicode: {}",
+      module_file.display(),
+    )
+  })
 }
 
 fn num_cpus(_context: Context) -> FunctionResult {
@@ -526,6 +500,11 @@ fn path_exists(context: Context, path: &str) -> FunctionResult {
 
 fn quote(_context: Context, s: &str) -> FunctionResult {
   Ok(format!("'{}'", s.replace('\'', "'\\''")))
+}
+
+fn read(context: Context, filename: &str) -> FunctionResult {
+  fs::read_to_string(context.evaluator.context.working_directory().join(filename))
+    .map_err(|err| format!("I/O error reading `{filename}`: {err}"))
 }
 
 fn replace(_context: Context, s: &str, from: &str, to: &str) -> FunctionResult {

@@ -9,6 +9,8 @@ pub(crate) enum ConditionalOperator {
   Inequality,
   /// `=~`
   RegexMatch,
+  /// `!~`
+  RegexMismatch,
 }
 
 impl Display for ConditionalOperator {
@@ -17,6 +19,7 @@ impl Display for ConditionalOperator {
       Self::Equality => write!(f, "=="),
       Self::Inequality => write!(f, "!="),
       Self::RegexMatch => write!(f, "=~"),
+      Self::RegexMismatch => write!(f, "!~"),
     }
   }
 }

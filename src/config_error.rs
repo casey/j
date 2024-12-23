@@ -12,6 +12,8 @@ pub(crate) enum ConfigError {
   Internal { message: String },
   #[snafu(display("Invalid module path `{}`", path.join(" ")))]
   ModulePath { path: Vec<String> },
+  #[snafu(display("Failed to parse request: {source}"))]
+  RequestParse { source: serde_json::Error },
   #[snafu(display(
     "Path-prefixed recipes may not be used with `--working-directory` or `--justfile`."
   ))]

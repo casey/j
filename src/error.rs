@@ -81,7 +81,7 @@ pub(crate) enum Error<'src> {
   },
   DotenvRequired,
   DumpJson {
-    serde_json_error: serde_json::Error,
+    source: serde_json::Error,
   },
   EditorInvoke {
     editor: OsString,
@@ -364,8 +364,8 @@ impl ColorDisplay for Error<'_> {
       DotenvRequired => {
         write!(f, "Dotenv file not found")?;
       }
-      DumpJson { serde_json_error } => {
-        write!(f, "Failed to dump JSON to stdout: {serde_json_error}")?;
+      DumpJson { source } => {
+        write!(f, "Failed to dump JSON to stdout: {source}")?;
       }
       EditorInvoke { editor, io_error } => {
         let editor = editor.to_string_lossy();

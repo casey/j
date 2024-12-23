@@ -1258,3 +1258,23 @@ fn style_unknown() {
     .status(EXIT_FAILURE)
     .run();
 }
+
+#[test]
+fn read() {
+  Test::new()
+    .justfile("foo := read('bar')")
+    .write("bar", "baz")
+    .args(["--evaluate", "foo"])
+    .stdout("baz")
+    .run();
+}
+
+#[test]
+fn read_file_not_found() {
+  Test::new()
+    .justfile("foo := read('bar')")
+    .args(["--evaluate", "foo"])
+    .stderr_regex(r"error: Call to function `read` failed: I/O error reading `bar`: .*")
+    .status(EXIT_FAILURE)
+    .run();
+}

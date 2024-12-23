@@ -50,6 +50,7 @@ pub(crate) struct Test {
   pub(crate) env: BTreeMap<String, String>,
   pub(crate) expected_files: BTreeMap<PathBuf, Vec<u8>>,
   pub(crate) justfile: Option<String>,
+  pub(crate) response: Option<Response>,
   pub(crate) shell: bool,
   pub(crate) status: i32,
   pub(crate) stderr: String,
@@ -74,6 +75,7 @@ impl Test {
       env: BTreeMap::new(),
       expected_files: BTreeMap::new(),
       justfile: Some(String::new()),
+      response: None,
       shell: true,
       status: EXIT_SUCCESS,
       stderr: String::new(),
@@ -137,6 +139,11 @@ impl Test {
   pub(crate) fn no_justfile(mut self) -> Self {
     self.justfile = None;
     self
+  }
+
+  pub(crate) fn response(mut self, response: Response) -> Self {
+    self.response = Some(response);
+    self.stdout_regex(".*")
   }
 
   pub(crate) fn shell(mut self, shell: bool) -> Self {
@@ -291,6 +298,15 @@ impl Test {
       | (self.stderr_regex.is_none() && !compare_string("stderr", output_stderr, &stderr))
     {
       panic!("Output mismatch.");
+    }
+
+    if let Some(ref response) = self.response {
+      assert_eq!(
+        &serde_json::from_str::<Response>(output_stdout)
+          .expect("failed to deserialize stdout as response"),
+        response,
+        "response mismatch"
+      );
     }
 
     for (path, expected) in &self.expected_files {

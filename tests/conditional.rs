@@ -136,7 +136,7 @@ test! {
   ",
   stdout: "",
   stderr: "
-    error: Expected '&&', '!=', '||', '==', '=~', '+', or '/', but found identifier
+    error: Expected '&&', '!=', '!~', '||', '==', '=~', '+', or '/', but found identifier
      ——▶ justfile:1:12
       │
     1 │ a := if '' a '' { '' } else { b }

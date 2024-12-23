@@ -1,6 +1,7 @@
 `just` is a handy way to save and run project-specific commands.
 
-Commands are stored in a file called `justfile` or `Justfile` with syntax inspired by `make`:
+Commands are stored in a file called `justfile` or `Justfile` with syntax
+inspired by `make`:
 
 ```make
 build:
@@ -15,8 +16,9 @@ test TEST: build
     ./test --test {{TEST}}
 ```
 
-`just` produces detailed error messages and avoids `make`'s idiosyncrasies, so debugging a justfile is easier and less surprising than debugging a makefile.
+`just` produces detailed error messages and avoids `make`'s idiosyncrasies, so
+debugging a justfile is easier and less surprising than debugging a makefile.
 
-It works on Linux, MacOS, and Windows.
+It works on all operating systems supported by Rust.
 
 Read more on [GitHub](https://github.com/casey/just).

@@ -23,7 +23,6 @@ pub(crate) struct Justfile<'src> {
   pub(crate) name: Option<Name<'src>>,
   pub(crate) recipes: Table<'src, Rc<Recipe<'src>>>,
   pub(crate) settings: Settings<'src>,
-  #[serde(skip)]
   pub(crate) source: PathBuf,
   pub(crate) unexports: HashSet<String>,
   #[serde(skip)]

@@ -1,6 +1,30 @@
 Changelog
 =========
 
+[1.38.0](https://github.com/casey/just/releases/tag/1.38.0) - 2024-12-10
+------------------------------------------------------------------------
+
+### Added
+- Add `[openbsd]` recipe attribute ([#2497](https://github.com/casey/just/pull/2497) by [vtamara](https://github.com/vtamara))
+- Add `[working-directory]` recipe attribute ([#2438](https://github.com/casey/just/pull/2438) by [bcheidemann](https://github.com/bcheidemann))
+- Add `--allow-missing` to ignore missing recipe and submodule errors ([#2460](https://github.com/casey/just/pull/2460) by [R3ZV](https://github.com/R3ZV))
+
+### Changed
+- Add snap package back to readme ([#2506](https://github.com/casey/just/pull/2506) by [casey](https://github.com/casey))
+- Forbid duplicate non-repeatable attributes ([#2483](https://github.com/casey/just/pull/2483) by [casey](https://github.com/casey))
+
+### Misc
+- Publish docs to GitHub pages on release only ([#2516](https://github.com/casey/just/pull/2516) by [casey](https://github.com/casey))
+- Note lack of support for string interpolation ([#2515](https://github.com/casey/just/pull/2515) by [casey](https://github.com/casey))
+- Embolden help text errors ([#2502](https://github.com/casey/just/pull/2502) by [casey](https://github.com/casey))
+- Style help text ([#2501](https://github.com/casey/just/pull/2501) by [casey](https://github.com/casey))
+- Add `--request` subcommand for testing ([#2498](https://github.com/casey/just/pull/2498) by [casey](https://github.com/casey))
+- [bin/forbid] Improve error message if ripgrep is missing ([#2493](https://github.com/casey/just/pull/2493) by [casey](https://github.com/casey))
+- Fix Rust 1.83 clippy warnings ([#2487](https://github.com/casey/just/pull/2487) by [casey](https://github.com/casey))
+- Refactor JSON tests ([#2484](https://github.com/casey/just/pull/2484) by [casey](https://github.com/casey))
+- Get `Config` from `ExecutionContext` instead of passing separately ([#2481](https://github.com/casey/just/pull/2481) by [casey](https://github.com/casey))
+- Don't write justfiles unchanged by formatting ([#2479](https://github.com/casey/just/pull/2479) by [casey](https://github.com/casey))
+
 [1.37.0](https://github.com/casey/just/releases/tag/1.37.0) - 2024-11-20
 ------------------------------------------------------------------------
 

@@ -6,7 +6,7 @@ pub(crate) use {
     test::{assert_eval_eq, Output, Test},
   },
   executable_path::executable_path,
-  just::unindent,
+  just::{unindent, Response},
   libc::{EXIT_FAILURE, EXIT_SUCCESS},
   pretty_assertions::Comparison,
   regex::Regex,
@@ -37,6 +37,7 @@ fn default<T: Default>() -> T {
 #[macro_use]
 mod test;
 
+mod alias_style;
 mod allow_duplicate_recipes;
 mod allow_duplicate_variables;
 mod allow_missing;
@@ -100,6 +101,7 @@ mod quote;
 mod readme;
 mod recursion_limit;
 mod regexes;
+mod request;
 mod run;
 mod script;
 mod search;

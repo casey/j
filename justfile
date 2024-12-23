@@ -69,6 +69,10 @@ update-contributors:
 outdated:
   cargo outdated -R
 
+[group: 'check']
+unused:
+  cargo +nightly udeps --workspace
+
 # publish current GitHub master branch
 [group: 'release']
 publish:
