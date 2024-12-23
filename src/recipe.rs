@@ -310,11 +310,13 @@ impl<'src, D> Recipe<'src, D> {
               });
             }
           } else {
-            return Err(error_from_signal(
-              self.name(),
-              Some(line_number),
-              exit_status,
-            ));
+            if !infallible_line {
+              return Err(error_from_signal(
+                self.name(),
+                Some(line_number),
+                exit_status,
+              ));
+            }
           }
         }
         Err(io_error) => {
@@ -325,8 +327,10 @@ impl<'src, D> Recipe<'src, D> {
         }
       };
 
-      if let Some(signal) = caught {
-        return Err(Error::Interrupted { signal });
+      if !infallible_line {
+        if let Some(signal) = caught {
+          return Err(Error::Interrupted { signal });
+        }
       }
     }
   }
