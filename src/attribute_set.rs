@@ -1,11 +1,5 @@
 use {super::*, std::collections};
 
-#[derive(Debug, Copy, Clone)]
-pub(crate) enum InvertedStatus {
-  Normal,
-  Inverted,
-}
-
 #[derive(Default, Debug, Clone, PartialEq, Serialize)]
 pub(crate) struct AttributeSet<'src>(BTreeSet<Attribute<'src>>);
 
@@ -18,25 +12,14 @@ impl<'src> AttributeSet<'src> {
     self.0.iter().any(|attr| attr.discriminant() == target)
   }
 
-  pub(crate) fn contains_invertible(
-    &self,
-    target: AttributeDiscriminant,
-  ) -> Option<InvertedStatus> {
-    self.get(target).and_then(|attr| {
-      Some(match attr {
-        Attribute::Linux { enabled }
-        | Attribute::Macos { enabled }
-        | Attribute::Openbsd { enabled }
-        | Attribute::Unix { enabled }
-        | Attribute::Windows { enabled } => {
-          if *enabled {
-            InvertedStatus::Normal
-          } else {
-            InvertedStatus::Inverted
-          }
-        }
-        _ => panic!("contains_invertible called with non-invertible attribute"),
-      })
+  pub(crate) fn contains_invertible(&self, target: AttributeDiscriminant) -> Option<bool> {
+    self.get(target).map(|attr| match attr {
+      Attribute::Linux { enabled }
+      | Attribute::Macos { enabled }
+      | Attribute::Openbsd { enabled }
+      | Attribute::Unix { enabled }
+      | Attribute::Windows { enabled } => *enabled,
+      _ => panic!("contains_invertible called with non-invertible attribute"),
     })
   }
 

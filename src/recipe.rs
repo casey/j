@@ -16,6 +16,76 @@ fn error_from_signal(recipe: &str, line_number: Option<usize>, exit_status: Exit
   }
 }
 
+#[derive(Debug)]
+struct SystemMap {
+  windows: bool,
+  macos: bool,
+  linux: bool,
+  openbsd: bool,
+  unix: bool,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum System {
+  Windows,
+  MacOS,
+  Linux,
+  OpenBSD,
+  Unix,
+}
+
+impl System {
+  fn current() -> System {
+    use System::*;
+    if cfg!(target_os = "linux") {
+      return Linux;
+    }
+    if cfg!(target_os = "openbsd") {
+      return OpenBSD;
+    }
+    if cfg!(target_os = "macos") {
+      return MacOS;
+    }
+    if cfg!(target_os = "windows") || cfg!(windows) {
+      return Windows;
+    }
+    if cfg!(unix) {
+      return Unix;
+    }
+    panic!("No recognized system");
+  }
+
+  fn enabled(self, enabled: SystemMap, disabled: SystemMap) -> bool {
+    match self {
+      System::Windows => {
+        !disabled.windows
+          && (enabled.windows
+            || !(enabled.macos || enabled.linux || enabled.openbsd || enabled.unix))
+      }
+      System::MacOS => {
+        !disabled.macos
+          && ((enabled.macos || enabled.unix)
+            || !(enabled.windows || enabled.linux || enabled.openbsd))
+      }
+      System::Linux => {
+        !disabled.linux
+          && ((enabled.linux || enabled.unix)
+            || !(enabled.windows || enabled.macos || enabled.openbsd))
+      }
+      System::OpenBSD => {
+        !disabled.openbsd
+          && ((enabled.openbsd || enabled.unix)
+            || !(enabled.windows || enabled.macos || enabled.linux))
+      }
+      System::Unix => {
+        !disabled.unix
+          && (enabled.unix
+            || !(enabled.windows || enabled.macos || enabled.linux || enabled.openbsd))
+      }
+    }
+  }
+}
+
 /// A recipe, e.g. `foo: bar baz`
 #[derive(PartialEq, Debug, Clone, Serialize)]
 pub(crate) struct Recipe<'src, D = Dependency<'src>> {
@@ -116,15 +186,7 @@ impl<'src, D> Recipe<'src, D> {
   }
 
   pub(crate) fn enabled(&self) -> bool {
-    use attribute_set::InvertedStatus;
-
-    struct Systems {
-      linux: bool,
-      macos: bool,
-      openbsd: bool,
-      unix: bool,
-      windows: bool,
-    }
+    use std::ops::Not;
 
     let linux = self
       .attributes
@@ -149,48 +211,23 @@ impl<'src, D> Recipe<'src, D> {
       return true;
     }
 
-    let systems = Systems {
-      linux: matches!(linux, Some(InvertedStatus::Normal)),
-      macos: matches!(macos, Some(InvertedStatus::Normal)),
-      openbsd: matches!(openbsd, Some(InvertedStatus::Normal)),
-      unix: matches!(unix, Some(InvertedStatus::Normal)),
-      windows: matches!(windows, Some(InvertedStatus::Normal)),
+    let enabled = SystemMap {
+      windows: windows.unwrap_or(false),
+      macos: macos.unwrap_or(false),
+      linux: linux.unwrap_or(false),
+      openbsd: openbsd.unwrap_or(false),
+      unix: unix.unwrap_or(false),
     };
 
-    let disabled = Systems {
-      linux: matches!(linux, Some(InvertedStatus::Inverted)),
-      macos: matches!(macos, Some(InvertedStatus::Inverted)),
-      openbsd: matches!(openbsd, Some(InvertedStatus::Inverted)),
-      unix: matches!(unix, Some(InvertedStatus::Inverted)),
-      windows: matches!(windows, Some(InvertedStatus::Inverted)),
+    let disabled = SystemMap {
+      linux: linux.is_some_and(bool::not),
+      macos: macos.is_some_and(bool::not),
+      openbsd: openbsd.is_some_and(bool::not),
+      unix: unix.is_some_and(bool::not),
+      windows: windows.is_some_and(bool::not),
     };
 
-    if cfg!(target_os = "linux") {
-      return !(disabled.linux || disabled.unix)
-        && ((systems.linux || systems.unix)
-          || (!systems.openbsd && !systems.windows && !systems.macos));
-    }
-
-    if cfg!(target_os = "openbsd") {
-      return !disabled.openbsd
-        && (systems.openbsd || (!systems.windows && !systems.macos && !systems.linux));
-    }
-
-    if cfg!(target_os = "windows") || cfg!(windows) {
-      return !disabled.windows
-        && (systems.windows
-          || (!systems.openbsd && !systems.unix && !systems.macos && !systems.linux));
-    }
-
-    if cfg!(target_os = "macos") {
-      return !disabled.macos
-        && (systems.macos || (!systems.openbsd && !systems.windows && !systems.linux));
-    }
-
-    if cfg!(unix) {
-      return !(disabled.unix) && (systems.unix || !systems.windows);
-    }
-    false
+    System::current().enabled(enabled, disabled)
   }
 
   fn print_exit_message(&self) -> bool {
