@@ -1136,16 +1136,15 @@ impl<'run, 'src> Parser<'run, 'src> {
 
       loop {
         let (name, inverted) = {
-          let mut i = false;
-          let mut n = self.parse_name()?;
-          if n.lexeme() == "not" {
-            i = true;
+          let name = self.parse_name()?;
+          if name.lexeme() == "not" {
             self.expect(ParenL)?;
-            n = self.parse_name()?;
+            let name = self.parse_name()?;
             self.expect(ParenR)?;
+            (name, true)
+          } else {
+            (name, false)
           }
-
-          (n, i)
         };
 
         let mut arguments = Vec::new();
@@ -1163,7 +1162,7 @@ impl<'run, 'src> Parser<'run, 'src> {
           self.expect(ParenR)?;
         }
 
-        let attribute = Attribute::new(name, arguments, inverted)?;
+        let attribute = Attribute::new(name, arguments, !inverted)?;
 
         let first = attributes.get(&attribute).or_else(|| {
           if attribute.repeatable() {

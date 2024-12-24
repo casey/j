@@ -24,18 +24,18 @@ impl<'src> AttributeSet<'src> {
   ) -> Option<InvertedStatus> {
     self.get(target).and_then(|attr| {
       Some(match attr {
-        Attribute::Linux { inverted }
-        | Attribute::Macos { inverted }
-        | Attribute::Openbsd { inverted }
-        | Attribute::Unix { inverted }
-        | Attribute::Windows { inverted } => {
-          if *inverted {
-            InvertedStatus::Inverted
-          } else {
+        Attribute::Linux { enabled }
+        | Attribute::Macos { enabled }
+        | Attribute::Openbsd { enabled }
+        | Attribute::Unix { enabled }
+        | Attribute::Windows { enabled } => {
+          if *enabled {
             InvertedStatus::Normal
+          } else {
+            InvertedStatus::Inverted
           }
         }
-        _ => return None,
+        _ => panic!("contains_invertible called with non-invertible attribute"),
       })
     })
   }
