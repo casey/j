@@ -13,9 +13,9 @@ pub(crate) enum Item<'src> {
     relative: StringLiteral<'src>,
   },
   Module {
-    attributes: AttributeSet<'src>,
     absolute: Option<PathBuf>,
-    doc: Option<&'src str>,
+    doc: Option<String>,
+    groups: Vec<String>,
     name: Name<'src>,
     optional: bool,
     relative: Option<StringLiteral<'src>>,

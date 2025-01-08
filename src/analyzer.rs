@@ -49,7 +49,6 @@ impl<'run, 'src> Analyzer<'run, 'src> {
         match item {
           Item::Alias(alias) => {
             Self::define(&mut definitions, alias.name, "alias", false)?;
-            Self::analyze_alias(alias)?;
             self.aliases.insert(alias.clone());
           }
           Item::Assignment(assignment) => {
@@ -65,36 +64,16 @@ impl<'run, 'src> Analyzer<'run, 'src> {
           }
           Item::Module {
             absolute,
-            name,
             doc,
-            attributes,
+            groups,
+            name,
             ..
           } => {
-            let mut doc_attr: Option<&str> = None;
-            let mut groups = Vec::new();
-            attributes.ensure_valid_attributes(
-              "Module",
-              **name,
-              &[AttributeDiscriminant::Doc, AttributeDiscriminant::Group],
-            )?;
-
-            for attribute in attributes {
-              match attribute {
-                Attribute::Doc(ref doc) => {
-                  doc_attr = Some(doc.as_ref().map(|s| s.cooked.as_ref()).unwrap_or_default());
-                }
-                Attribute::Group(ref group) => {
-                  groups.push(group.cooked.clone());
-                }
-                _ => unreachable!(),
-              }
-            }
-
             if let Some(absolute) = absolute {
               Self::define(&mut definitions, *name, "module", false)?;
               self.modules.insert(Self::analyze(
                 asts,
-                doc_attr.or(*doc).map(ToOwned::to_owned),
+                doc.clone(),
                 groups.as_slice(),
                 loaded,
                 Some(*name),
@@ -296,15 +275,6 @@ impl<'run, 'src> Analyzer<'run, 'src> {
       }
     }
 
-    Ok(())
-  }
-
-  fn analyze_alias(alias: &Alias<'src, Name<'src>>) -> CompileResult<'src> {
-    alias.attributes.ensure_valid_attributes(
-      "Alias",
-      *alias.name,
-      &[AttributeDiscriminant::Private],
-    )?;
     Ok(())
   }
 

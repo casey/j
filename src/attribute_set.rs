@@ -69,3 +69,13 @@ impl<'src, 'a> IntoIterator for &'a AttributeSet<'src> {
     self.0.iter()
   }
 }
+
+impl<'src> IntoIterator for AttributeSet<'src> {
+  type Item = Attribute<'src>;
+
+  type IntoIter = collections::btree_set::IntoIter<Attribute<'src>>;
+
+  fn into_iter(self) -> Self::IntoIter {
+    self.0.into_iter()
+  }
+}

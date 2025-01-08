@@ -181,7 +181,7 @@ impl Subcommand {
   }
 
   fn changelog() {
-    print!("{}", include_str!("../CHANGELOG.md"));
+    write!(io::stdout(), "{}", include_str!("../CHANGELOG.md")).ok();
   }
 
   fn choose<'src>(
