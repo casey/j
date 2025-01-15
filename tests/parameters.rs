@@ -36,3 +36,17 @@ fn parameter_default_values_may_not_use_later_parameters() {
     .status(EXIT_FAILURE)
     .run();
 }
+
+#[test]
+fn parameter_variadic_default_may_use_earlier_parameters() {
+  Test::new()
+    .justfile(
+      "
+        @foo a *b=a:
+          echo {{ b }}
+      ",
+    )
+    .args(["foo", "bar"])
+    .stdout("bar\n")
+    .run();
+}

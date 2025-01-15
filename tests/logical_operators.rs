@@ -81,3 +81,25 @@ fn nesting() {
   evaluate("'' || '' || '' || '' || 'foo'", "foo");
   evaluate("'foo' && 'foo' && 'foo' && 'foo' && 'bar'", "bar");
 }
+
+#[test]
+fn empty_variadics_are_falsey() {
+  #[track_caller]
+  fn eval_variadics<'a>(args: impl AsRef<[&'a str]>, expected: &'a str) {
+    Test::new()
+      .justfile("@foo *args:\n echo {{ args && 'true' || 'false' }}")
+      .env("JUST_UNSTABLE", "1")
+      .arg("foo")
+      .args(args)
+      .stdout(format!("{expected}\n"))
+      .run();
+  }
+
+  // false als long as the joined *args are an empty string
+  eval_variadics([], "false");
+  eval_variadics([""], "false");
+
+  eval_variadics(["x"], "true");
+  eval_variadics([" "], "true");
+  eval_variadics(["", ""], "true");
+}

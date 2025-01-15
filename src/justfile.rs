@@ -323,7 +323,7 @@ impl<'src> Justfile<'src> {
     }
 
     let (outer, positional) =
-      Evaluator::evaluate_parameters(context, is_dependency, arguments, &recipe.parameters)?;
+      Evaluator::evaluate_recipe_parameters(context, is_dependency, arguments, &recipe.parameters)?;
 
     let scope = outer.child();
 
@@ -331,12 +331,12 @@ impl<'src> Justfile<'src> {
 
     if !context.config.no_dependencies {
       for Dependency { recipe, arguments } in recipe.dependencies.iter().take(recipe.priors) {
-        let arguments = arguments
-          .iter()
-          .map(|argument| evaluator.evaluate_expression(argument))
-          .collect::<RunResult<Vec<String>>>()?;
+        let mut evaluated_args = Vec::new();
+        for argument in arguments {
+          evaluated_args.extend(evaluator.evaluate_list_expression(argument)?);
+        }
 
-        Self::run_recipe(&arguments, context, ran, recipe, true)?;
+        Self::run_recipe(&evaluated_args, context, ran, recipe, true)?;
       }
     }
 
@@ -346,13 +346,12 @@ impl<'src> Justfile<'src> {
       let mut ran = Ran::default();
 
       for Dependency { recipe, arguments } in recipe.subsequents() {
-        let mut evaluated = Vec::new();
-
+        let mut evaluated_args = Vec::new();
         for argument in arguments {
-          evaluated.push(evaluator.evaluate_expression(argument)?);
+          evaluated_args.extend(evaluator.evaluate_list_expression(argument)?);
         }
 
-        Self::run_recipe(&evaluated, context, &mut ran, recipe, true)?;
+        Self::run_recipe(&evaluated_args, context, &mut ran, recipe, true)?;
       }
     }
 

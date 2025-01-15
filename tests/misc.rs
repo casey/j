@@ -2066,3 +2066,22 @@ test! {
   "#,
   args: (),
 }
+
+#[test]
+fn variadics_are_forwarded_as_single_string() {
+  Test::new()
+    .justfile(
+      "
+        set positional-arguments
+        @entry *args: (scalar-dep args) (variadic-dep args)
+          echo entry-len=$#
+        @scalar-dep depargs:
+          echo scalar-dep-len=$#
+        @variadic-dep *depargs:
+          echo variadic-dep-len=$#
+        ",
+    )
+    .args(["entry", "a b", "c d"])
+    .stdout("scalar-dep-len=1\nvariadic-dep-len=1\nentry-len=2\n")
+    .run();
+}

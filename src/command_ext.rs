@@ -40,7 +40,7 @@ impl CommandExt for Command {
 
     for binding in scope.bindings() {
       if binding.export || (settings.export && !binding.constant) {
-        self.env(binding.name.lexeme(), &binding.value);
+        self.env(binding.name.lexeme(), binding.value.to_joined());
       }
     }
   }

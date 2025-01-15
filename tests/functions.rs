@@ -515,6 +515,36 @@ fn prepend() {
 }
 
 #[test]
+fn append_prepend_with_variadic() {
+  const JUSTFILE: &str = "
+@foo *args:
+  echo 'prepend=[{{prepend('x:', args)}}] append=[{{append(':y', args)}}] args=[{{args}}]'
+  ";
+
+  // no arguments should be empty string
+  Test::new()
+    .justfile(JUSTFILE)
+    .args(["foo"])
+    .stdout("prepend=[] append=[] args=[]\n")
+    .run();
+
+  // single empty string should have identical output
+  Test::new()
+    .justfile(JUSTFILE)
+    .args(["foo", ""])
+    .stdout("prepend=[] append=[] args=[]\n")
+    .run();
+
+  // the prepend/append functions split by whitespace,
+  // so variadic CLI args should not be respected
+  Test::new()
+    .justfile(JUSTFILE)
+    .args(["foo", "a", "b c", "", "d"])
+    .stdout("prepend=[x:a x:b x:c x:d] append=[a:y b:y c:y d:y] args=[a b c  d]\n")
+    .run();
+}
+
+#[test]
 #[cfg(not(windows))]
 fn join() {
   assert_eval_eq("join('a', 'b', 'c', 'd')", "a/b/c/d");
