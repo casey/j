@@ -267,22 +267,44 @@ impl<'src, 'run> Evaluator<'src, 'run> {
       .module
       .settings
       .shell_command(self.context.config);
-    cmd.arg(command);
-    cmd.args(args);
-    cmd.current_dir(self.context.working_directory());
-    cmd.export(
-      &self.context.module.settings,
-      self.context.dotenv,
-      &self.scope,
-      &self.context.module.unexports,
-    );
-    cmd.stdin(Stdio::inherit());
-    cmd.stderr(if self.context.config.verbosity.quiet() {
-      Stdio::null()
-    } else {
-      Stdio::inherit()
-    });
-    InterruptHandler::guard(|| output(cmd))
+
+    cmd
+      .arg(command)
+      .args(args)
+      .current_dir(self.context.working_directory())
+      .export(
+        &self.context.module.settings,
+        self.context.dotenv,
+        &self.scope,
+        &self.context.module.unexports,
+      )
+      .stdin(Stdio::inherit())
+      .stderr(if self.context.config.verbosity.quiet() {
+        Stdio::null()
+      } else {
+        Stdio::inherit()
+      })
+      .stdout(Stdio::piped());
+
+    let (result, caught) = cmd.output_guard();
+
+    let output = result.map_err(OutputError::Io)?;
+
+    OutputError::result_from_exit_status(output.status)?;
+
+    let output = str::from_utf8(&output.stdout).map_err(OutputError::Utf8)?;
+
+    if let Some(signal) = caught {
+      return Err(OutputError::Interrupted(signal));
+    }
+
+    Ok(
+      output
+        .strip_suffix("\r\n")
+        .or_else(|| output.strip_suffix("\n"))
+        .unwrap_or(output)
+        .into(),
+    )
   }
 
   pub(crate) fn evaluate_line(

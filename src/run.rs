@@ -24,7 +24,7 @@ pub fn run(args: impl Iterator<Item = impl Into<OsString> + Clone>) -> Result<()
 
   config
     .and_then(|config| {
-      InterruptHandler::install(config.verbosity).ok();
+      SignalHandler::install(config.verbosity)?;
       config.subcommand.execute(&config, &loader)
     })
     .map_err(|error| {

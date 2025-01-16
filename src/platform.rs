@@ -44,6 +44,17 @@ impl PlatformInterface for Platform {
       .map(str::to_string)
       .ok_or_else(|| String::from("Error getting current directory: unicode decode error"))
   }
+
+  fn install_signal_handler<T: Fn(Signal) + Send + 'static>(handler: T) -> RunResult<'static> {
+    // todo: name thread
+    thread::spawn(move || {
+      // todo: handle errors?
+      for signal in Signals::new().unwrap() {
+        handler(signal.unwrap());
+      }
+    });
+    Ok(())
+  }
 }
 
 #[cfg(windows)]
@@ -111,5 +122,12 @@ impl PlatformInterface for Platform {
         .map(str::to_string)
         .ok_or_else(|| String::from("Error getting current directory: unicode decode error")),
     }
+  }
+
+  fn install_signal_handler<T: Fn(Signal) + Send + 'static>(
+    handler: T,
+  ) -> Result<(), Box<dyn std::error::Error>> {
+    ctrlc::set_handler(|| handler(Signal::Interrupt))?;
+    Ok(())
   }
 }

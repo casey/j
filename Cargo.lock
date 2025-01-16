@@ -540,6 +540,7 @@ dependencies = [
  "heck",
  "lexiclean",
  "libc",
+ "nix",
  "num_cpus",
  "once_cell",
  "percent-encoding",

@@ -109,20 +109,20 @@ impl<'src> Justfile<'src> {
           Command::new(binary)
         };
 
-        command.args(arguments);
-
-        command.current_dir(&search.working_directory);
+        command
+          .args(arguments)
+          .current_dir(&search.working_directory);
 
         let scope = scope.child();
 
         command.export(&self.settings, &dotenv, &scope, &self.unexports);
 
-        let status = InterruptHandler::guard(|| command.status()).map_err(|io_error| {
-          Error::CommandInvoke {
-            binary: binary.clone(),
-            arguments: arguments.clone(),
-            io_error,
-          }
+        let (result, caught) = command.status_guard();
+
+        let status = result.map_err(|io_error| Error::CommandInvoke {
+          binary: binary.clone(),
+          arguments: arguments.clone(),
+          io_error,
         })?;
 
         if !status.success() {
@@ -132,6 +132,10 @@ impl<'src> Justfile<'src> {
             status,
           });
         };
+
+        if let Some(signal) = caught {
+          return Err(Error::Interrupted { signal });
+        }
 
         return Ok(());
       }
