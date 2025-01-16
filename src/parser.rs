@@ -1160,7 +1160,17 @@ impl<'run, 'src> Parser<'run, 'src> {
       token.get_or_insert(bracket);
 
       loop {
-        let name = self.parse_name()?;
+        let (name, inverted) = {
+          let name = self.parse_name()?;
+          if name.lexeme() == "not" {
+            self.expect(ParenL)?;
+            let name = self.parse_name()?;
+            self.expect(ParenR)?;
+            (name, true)
+          } else {
+            (name, false)
+          }
+        };
 
         let mut arguments = Vec::new();
 
@@ -1177,7 +1187,7 @@ impl<'run, 'src> Parser<'run, 'src> {
           self.expect(ParenR)?;
         }
 
-        let attribute = Attribute::new(name, arguments)?;
+        let attribute = Attribute::new(name, arguments, !inverted)?;
 
         let first = attributes.get(&attribute).or_else(|| {
           if attribute.repeatable() {
@@ -2691,6 +2701,17 @@ mod tests {
     column: 1,
     width:  7,
     kind:   UnknownAttribute { attribute: "unknown" },
+  }
+
+  error! {
+    name:   invalid_invertable_attribute,
+    input:  "[not(private)]\nsome_recipe:\n @exit 3",
+    offset: 5,
+    line:   0,
+    column: 5,
+    width:  7,
+    kind:   InvalidInvertedAttribute { attr_name: "private" },
+
   }
 
   error! {

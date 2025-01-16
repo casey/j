@@ -13,17 +13,17 @@ pub(crate) enum Attribute<'src> {
   Doc(Option<StringLiteral<'src>>),
   Extension(StringLiteral<'src>),
   Group(StringLiteral<'src>),
-  Linux,
-  Macos,
+  Linux { enabled: bool },
+  Macos { enabled: bool },
   NoCd,
   NoExitMessage,
   NoQuiet,
-  Openbsd,
+  Openbsd { enabled: bool },
   PositionalArguments,
   Private,
   Script(Option<Interpreter<'src>>),
-  Unix,
-  Windows,
+  Unix { enabled: bool },
+  Windows { enabled: bool },
   WorkingDirectory(StringLiteral<'src>),
 }
 
@@ -51,6 +51,7 @@ impl<'src> Attribute<'src> {
   pub(crate) fn new(
     name: Name<'src>,
     arguments: Vec<StringLiteral<'src>>,
+    enabled: bool,
   ) -> CompileResult<'src, Self> {
     let discriminant = name
       .lexeme()
@@ -75,29 +76,38 @@ impl<'src> Attribute<'src> {
       );
     }
 
-    Ok(match discriminant {
-      AttributeDiscriminant::Confirm => Self::Confirm(arguments.into_iter().next()),
-      AttributeDiscriminant::Doc => Self::Doc(arguments.into_iter().next()),
-      AttributeDiscriminant::Extension => Self::Extension(arguments.into_iter().next().unwrap()),
-      AttributeDiscriminant::Group => Self::Group(arguments.into_iter().next().unwrap()),
-      AttributeDiscriminant::Linux => Self::Linux,
-      AttributeDiscriminant::Macos => Self::Macos,
-      AttributeDiscriminant::NoCd => Self::NoCd,
-      AttributeDiscriminant::NoExitMessage => Self::NoExitMessage,
-      AttributeDiscriminant::NoQuiet => Self::NoQuiet,
-      AttributeDiscriminant::Openbsd => Self::Openbsd,
-      AttributeDiscriminant::PositionalArguments => Self::PositionalArguments,
-      AttributeDiscriminant::Private => Self::Private,
-      AttributeDiscriminant::Script => Self::Script({
+    Ok(match (enabled, discriminant) {
+      (enabled, AttributeDiscriminant::Linux) => Self::Linux { enabled },
+      (enabled, AttributeDiscriminant::Macos) => Self::Macos { enabled },
+      (enabled, AttributeDiscriminant::Unix) => Self::Unix { enabled },
+      (enabled, AttributeDiscriminant::Windows) => Self::Windows { enabled },
+      (enabled, AttributeDiscriminant::Openbsd) => Self::Openbsd { enabled },
+
+      (false, _attr) => {
+        return Err(name.error(CompileErrorKind::InvalidInvertedAttribute {
+          attr_name: name.lexeme(),
+        }))
+      }
+
+      (true, AttributeDiscriminant::Confirm) => Self::Confirm(arguments.into_iter().next()),
+      (true, AttributeDiscriminant::Doc) => Self::Doc(arguments.into_iter().next()),
+      (true, AttributeDiscriminant::Extension) => {
+        Self::Extension(arguments.into_iter().next().unwrap())
+      }
+      (true, AttributeDiscriminant::Group) => Self::Group(arguments.into_iter().next().unwrap()),
+      (true, AttributeDiscriminant::NoCd) => Self::NoCd,
+      (true, AttributeDiscriminant::NoExitMessage) => Self::NoExitMessage,
+      (true, AttributeDiscriminant::NoQuiet) => Self::NoQuiet,
+      (true, AttributeDiscriminant::PositionalArguments) => Self::PositionalArguments,
+      (true, AttributeDiscriminant::Private) => Self::Private,
+      (true, AttributeDiscriminant::Script) => Self::Script({
         let mut arguments = arguments.into_iter();
         arguments.next().map(|command| Interpreter {
           command,
           arguments: arguments.collect(),
         })
       }),
-      AttributeDiscriminant::Unix => Self::Unix,
-      AttributeDiscriminant::Windows => Self::Windows,
-      AttributeDiscriminant::WorkingDirectory => {
+      (true, AttributeDiscriminant::WorkingDirectory) => {
         Self::WorkingDirectory(arguments.into_iter().next().unwrap())
       }
     })
@@ -118,28 +128,34 @@ impl<'src> Attribute<'src> {
 
 impl Display for Attribute<'_> {
   fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-    write!(f, "{}", self.name())?;
+    let name = self.name();
 
     match self {
       Self::Confirm(Some(argument))
       | Self::Doc(Some(argument))
       | Self::Extension(argument)
       | Self::Group(argument)
-      | Self::WorkingDirectory(argument) => write!(f, "({argument})")?,
-      Self::Script(Some(shell)) => write!(f, "({shell})")?,
+      | Self::WorkingDirectory(argument) => write!(f, "{name}({argument})")?,
+      Self::Script(Some(shell)) => write!(f, "{name}({shell})")?,
+      Self::Linux { enabled }
+      | Self::Macos { enabled }
+      | Self::Unix { enabled }
+      | Self::Openbsd { enabled }
+      | Self::Windows { enabled } => {
+        if *enabled {
+          write!(f, "{name}")?;
+        } else {
+          write!(f, "not({name})")?;
+        }
+      }
       Self::Confirm(None)
       | Self::Doc(None)
-      | Self::Linux
-      | Self::Macos
       | Self::NoCd
       | Self::NoExitMessage
       | Self::NoQuiet
-      | Self::Openbsd
       | Self::PositionalArguments
       | Self::Private
-      | Self::Script(None)
-      | Self::Unix
-      | Self::Windows => {}
+      | Self::Script(None) => write!(f, "{name}")?,
     }
 
     Ok(())

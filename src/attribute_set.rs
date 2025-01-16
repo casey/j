@@ -12,6 +12,17 @@ impl<'src> AttributeSet<'src> {
     self.0.iter().any(|attr| attr.discriminant() == target)
   }
 
+  pub(crate) fn contains_invertible(&self, target: AttributeDiscriminant) -> Option<bool> {
+    self.get(target).map(|attr| match attr {
+      Attribute::Linux { enabled }
+      | Attribute::Macos { enabled }
+      | Attribute::Openbsd { enabled }
+      | Attribute::Unix { enabled }
+      | Attribute::Windows { enabled } => *enabled,
+      _ => panic!("contains_invertible called with non-invertible attribute"),
+    })
+  }
+
   pub(crate) fn get(&self, discriminant: AttributeDiscriminant) -> Option<&Attribute<'src>> {
     self
       .0
