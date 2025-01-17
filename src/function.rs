@@ -90,6 +90,7 @@ pub(crate) fn get(name: &str) -> Option<Function> {
     "read" => Unary(read),
     "replace" => Ternary(replace),
     "replace_regex" => Ternary(replace_regex),
+    "require" => Unary(require),
     "semver_matches" => Binary(semver_matches),
     "sha256" => Unary(sha256),
     "sha256_file" => Unary(sha256_file),
@@ -111,6 +112,7 @@ pub(crate) fn get(name: &str) -> Option<Function> {
     "uppercamelcase" => Unary(uppercamelcase),
     "uppercase" => Unary(uppercase),
     "uuid" => Nullary(uuid),
+    "which" => Unary(which),
     "without_extension" => Unary(without_extension),
     _ => return None,
   };
@@ -511,6 +513,15 @@ fn replace(_context: Context, s: &str, from: &str, to: &str) -> FunctionResult {
   Ok(s.replace(from, to))
 }
 
+fn require(context: Context, s: &str) -> FunctionResult {
+  let p = which(context, s)?;
+  if p.is_empty() {
+    Err(format!("could not find required executable: `{s}`"))
+  } else {
+    Ok(p)
+  }
+}
+
 fn replace_regex(_context: Context, s: &str, regex: &str, replacement: &str) -> FunctionResult {
   Ok(
     Regex::new(regex)
@@ -659,6 +670,52 @@ fn uppercase(_context: Context, s: &str) -> FunctionResult {
 
 fn uuid(_context: Context) -> FunctionResult {
   Ok(uuid::Uuid::new_v4().to_string())
+}
+
+fn which(context: Context, s: &str) -> FunctionResult {
+  let cmd = Path::new(s);
+
+  let candidates = match cmd.components().count() {
+    0 => return Err("empty command".into()),
+    1 => {
+      // cmd is a regular command
+      let path_var = env::var_os("PATH").ok_or("Environment variable `PATH` is not set")?;
+      env::split_paths(&path_var)
+        .map(|path| path.join(cmd))
+        .collect()
+    }
+    _ => {
+      // cmd contains a path separator, treat it as a path
+      vec![cmd.into()]
+    }
+  };
+
+  for mut candidate in candidates {
+    if candidate.is_relative() {
+      // This candidate is a relative path, either because the user invoked `which("rel/path")`,
+      // or because there was a relative path in `PATH`. Resolve it to an absolute path,
+      // relative to the working directory of the just invocation.
+      candidate = context
+        .evaluator
+        .context
+        .working_directory()
+        .join(candidate);
+    }
+
+    candidate = candidate.lexiclean();
+
+    if is_executable::is_executable(&candidate) {
+      return candidate.to_str().map(str::to_string).ok_or_else(|| {
+        format!(
+          "Executable path is not valid unicode: {}",
+          candidate.display()
+        )
+      });
+    }
+  }
+
+  // No viable candidates; return an empty string
+  Ok(String::new())
 }
 
 fn without_extension(_context: Context, path: &str) -> FunctionResult {

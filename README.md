@@ -1675,6 +1675,23 @@ set unstable
 foo := env('FOO') || 'DEFAULT_VALUE'
 ```
 
+- `which(exe)`<sup>master</sup> — Retrieves the full path of `exe` according
+  to the `PATH`. Returns an empty string if no executable named `exe` exists.
+
+```just
+bash := which("bash")
+nexist := which("does-not-exist")
+
+@test:
+    echo "bash: '{{bash}}'"
+    echo "nexist: '{{nexist}}'"
+```
+
+```console
+bash: '/bin/bash'
+nexist: ''
+```
+
 #### Invocation Information
 
 - `is_dependency()` - Returns the string `true` if the current recipe is being

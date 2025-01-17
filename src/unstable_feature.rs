@@ -6,6 +6,7 @@ pub(crate) enum UnstableFeature {
   LogicalOperators,
   ScriptAttribute,
   ScriptInterpreterSetting,
+  WhichFunction,
 }
 
 impl Display for UnstableFeature {
@@ -20,6 +21,7 @@ impl Display for UnstableFeature {
       Self::ScriptInterpreterSetting => {
         write!(f, "The `script-interpreter` setting is currently unstable.")
       }
+      Self::WhichFunction => write!(f, "The `which()` function is currently unstable."),
     }
   }
 }

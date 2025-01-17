@@ -205,6 +205,29 @@ impl Test {
     self
   }
 
+  pub(crate) fn make_executable(self, path: impl AsRef<Path>) -> Self {
+    let file = self.tempdir.path().join(path);
+
+    // Make sure it exists first, as a sanity check.
+    assert!(file.exists(), "file does not exist: {}", file.display());
+
+    // Windows uses file extensions to determine whether a file is executable.
+    // Other systems don't care. To keep these tests cross-platform, just make
+    // sure all executables end with ".exe" suffix.
+    assert!(
+      file.extension() == Some("exe".as_ref()),
+      "executable file does not end with .exe: {}",
+      file.display()
+    );
+
+    if !cfg!(windows) {
+      let perms = std::os::unix::fs::PermissionsExt::from_mode(0o755);
+      fs::set_permissions(file, perms).unwrap();
+    }
+
+    self
+  }
+
   pub(crate) fn expect_file(mut self, path: impl AsRef<Path>, content: impl AsRef<[u8]>) -> Self {
     let path = path.as_ref();
     self

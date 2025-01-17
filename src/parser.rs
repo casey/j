@@ -698,6 +698,9 @@ impl<'run, 'src> Parser<'run, 'src> {
 
         if self.next_is(ParenL) {
           let arguments = self.parse_sequence()?;
+          if name.lexeme() == "which" {
+            self.unstable_features.insert(UnstableFeature::WhichFunction);
+          }
           Ok(Expression::Call {
             thunk: Thunk::resolve(name, arguments)?,
           })
