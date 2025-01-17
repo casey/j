@@ -16,6 +16,7 @@ pub(crate) struct Settings<'src> {
   pub(crate) export: bool,
   pub(crate) fallback: bool,
   pub(crate) ignore_comments: bool,
+  pub(crate) no_exit_message: bool,
   pub(crate) positional_arguments: bool,
   pub(crate) quiet: bool,
   #[serde(skip)]
@@ -60,6 +61,9 @@ impl<'src> Settings<'src> {
         }
         Setting::IgnoreComments(ignore_comments) => {
           settings.ignore_comments = ignore_comments;
+        }
+        Setting::NoExitMessage(no_exit_message) => {
+          settings.no_exit_message = no_exit_message;
         }
         Setting::PositionalArguments(positional_arguments) => {
           settings.positional_arguments = positional_arguments;

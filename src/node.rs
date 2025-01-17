@@ -291,6 +291,7 @@ impl<'src> Node<'src> for Set<'src> {
       | Setting::DotenvRequired(value)
       | Setting::Export(value)
       | Setting::Fallback(value)
+      | Setting::NoExitMessage(value)
       | Setting::PositionalArguments(value)
       | Setting::Quiet(value)
       | Setting::Unstable(value)

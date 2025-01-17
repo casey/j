@@ -11,6 +11,7 @@ use super::*;
 pub(crate) enum Attribute<'src> {
   Confirm(Option<StringLiteral<'src>>),
   Doc(Option<StringLiteral<'src>>),
+  ExitMessage,
   Extension(StringLiteral<'src>),
   Group(StringLiteral<'src>),
   Linux,
@@ -32,7 +33,8 @@ impl AttributeDiscriminant {
     match self {
       Self::Confirm | Self::Doc => 0..=1,
       Self::Group | Self::Extension | Self::WorkingDirectory => 1..=1,
-      Self::Linux
+      Self::ExitMessage
+      | Self::Linux
       | Self::Macos
       | Self::NoCd
       | Self::NoExitMessage
@@ -78,6 +80,7 @@ impl<'src> Attribute<'src> {
     Ok(match discriminant {
       AttributeDiscriminant::Confirm => Self::Confirm(arguments.into_iter().next()),
       AttributeDiscriminant::Doc => Self::Doc(arguments.into_iter().next()),
+      AttributeDiscriminant::ExitMessage => Self::ExitMessage,
       AttributeDiscriminant::Extension => Self::Extension(arguments.into_iter().next().unwrap()),
       AttributeDiscriminant::Group => Self::Group(arguments.into_iter().next().unwrap()),
       AttributeDiscriminant::Linux => Self::Linux,
@@ -129,6 +132,7 @@ impl Display for Attribute<'_> {
       Self::Script(Some(shell)) => write!(f, "({shell})")?,
       Self::Confirm(None)
       | Self::Doc(None)
+      | Self::ExitMessage
       | Self::Linux
       | Self::Macos
       | Self::NoCd

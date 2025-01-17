@@ -19,6 +19,7 @@ pub(crate) enum Keyword {
   IgnoreComments,
   Import,
   Mod,
+  NoExitMessage,
   PositionalArguments,
   Quiet,
   ScriptInterpreter,

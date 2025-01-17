@@ -11,6 +11,7 @@ pub(crate) enum Setting<'src> {
   Export(bool),
   Fallback(bool),
   IgnoreComments(bool),
+  NoExitMessage(bool),
   PositionalArguments(bool),
   Quiet(bool),
   ScriptInterpreter(Interpreter<'src>),
@@ -32,6 +33,7 @@ impl Display for Setting<'_> {
       | Self::Export(value)
       | Self::Fallback(value)
       | Self::IgnoreComments(value)
+      | Self::NoExitMessage(value)
       | Self::PositionalArguments(value)
       | Self::Quiet(value)
       | Self::Unstable(value)

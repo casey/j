@@ -961,6 +961,17 @@ impl<'run, 'src> Parser<'run, 'src> {
       );
     }
 
+    let no_exit_message_attr = attributes.contains(AttributeDiscriminant::ExitMessage);
+    let exit_message_attr = attributes.contains(AttributeDiscriminant::NoExitMessage);
+
+    if no_exit_message_attr && exit_message_attr {
+      return Err(
+        name.error(CompileErrorKind::ExitMessageAndNoExitMessageAttribute {
+          recipe: name.lexeme(),
+        }),
+      );
+    }
+
     let private =
       name.lexeme().starts_with('_') || attributes.contains(AttributeDiscriminant::Private);
 
@@ -1093,6 +1104,7 @@ impl<'run, 'src> Parser<'run, 'src> {
       Keyword::Export => Some(Setting::Export(self.parse_set_bool()?)),
       Keyword::Fallback => Some(Setting::Fallback(self.parse_set_bool()?)),
       Keyword::IgnoreComments => Some(Setting::IgnoreComments(self.parse_set_bool()?)),
+      Keyword::NoExitMessage => Some(Setting::NoExitMessage(self.parse_set_bool()?)),
       Keyword::PositionalArguments => Some(Setting::PositionalArguments(self.parse_set_bool()?)),
       Keyword::Quiet => Some(Setting::Quiet(self.parse_set_bool()?)),
       Keyword::Unstable => Some(Setting::Unstable(self.parse_set_bool()?)),

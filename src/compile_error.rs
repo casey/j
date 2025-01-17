@@ -120,7 +120,11 @@ impl Display for CompileError<'_> {
       }
       DuplicateUnexport { variable } => {
         write!(f, "Variable `{variable}` is unexported multiple times")
-      }
+      },
+      ExitMessageAndNoExitMessageAttribute { recipe } =>write!(
+        f,
+        "Recipe `{recipe}` has both `[exit-message]` and `[no-exit-message]` attributes"
+      ),
       ExpectedKeyword { expected, found } => {
         let expected = List::or_ticked(expected);
         if found.kind == TokenKind::Identifier {

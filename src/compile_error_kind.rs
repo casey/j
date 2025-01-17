@@ -47,6 +47,9 @@ pub(crate) enum CompileErrorKind<'src> {
   DuplicateUnexport {
     variable: &'src str,
   },
+  ExitMessageAndNoExitMessageAttribute {
+    recipe: &'src str,
+  },
   ExpectedKeyword {
     expected: Vec<Keyword>,
     found: Token<'src>,
