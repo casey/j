@@ -6,7 +6,7 @@
   <a href=https://crates.io/crates/just>
     <img src=https://img.shields.io/crates/v/just.svg alt="crates.io version">
   </a>
-  <a href=https://github.com/casey/just/actions>
+  <a href=https://github.com/casey/just/actions/workflows/ci.yaml>
     <img src=https://github.com/casey/just/actions/workflows/ci.yaml/badge.svg alt="build status">
   </a>
   <a href=https://github.com/casey/just/releases>
