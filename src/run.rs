@@ -29,7 +29,7 @@ pub fn run(args: impl Iterator<Item = impl Into<OsString> + Clone>) -> Result<()
     })
     .map_err(|error| {
       if !verbosity.quiet() && error.print_message() {
-        eprintln!("{}", error.color_display(color.stderr()));
+        crate::error::render_error(&error, color);
       }
       error.code().unwrap_or(EXIT_FAILURE)
     })

@@ -45,13 +45,13 @@ test! {
   justfile: "
     foo: && foo
   ",
-  stderr: "
-    error: Recipe `foo` depends on itself
-     ——▶ justfile:1:9
-      │
-    1 │ foo: && foo
-      │         ^^^
-  ",
+  stderr:
+"Error: Recipe `foo` depends on itself
+   ╭─[justfile:1:9]
+   │
+ 1 │ foo: && foo
+───╯
+",
   status: EXIT_FAILURE,
 }
 

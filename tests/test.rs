@@ -228,7 +228,8 @@ impl Test {
     fn compare_string(name: &str, have: &str, want: &str) -> bool {
       let equal = have == want;
       if !equal {
-        eprintln!("Bad {name}: {}", StrComparison::new(&have, &want));
+        //eprintln!("Bad {name}: {}", StrComparison::new(&have, &want));
+        eprintln!("Bad {name}:\n{}||\n-------------\n{}||\n=========", &have, &want);
       }
       equal
     }

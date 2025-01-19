@@ -19,6 +19,62 @@ impl<'src> CompileError<'src> {
   }
 }
 
+pub(crate) fn render_compile_error(error: &CompileError, color: Color) {
+  use ariadne::{Config, Label, Report, ReportKind, Source};
+
+  let token = error.token;
+  let source = Source::from(token.src);
+
+  let start = token.offset;
+  let end = token.offset + token.length;
+
+  let path = format!("{}", token.path.display());
+  let label = Label::new((&path, start..end));
+
+  let config = Config::default().with_color(color.stderr().active());
+  let report = Report::build(ReportKind::Error, &path, start).with_config(config);
+
+  let report = match &*error.kind {
+    CompileErrorKind::AttributeArgumentCountMismatch {
+      attribute,
+      found,
+      min,
+      max,
+    } => {
+      let label_msg = format!("Found {found} {}", Count("argument", *found));
+
+      let note = if min == max {
+        format!("`{attribute}` takes {min} {}", Count("argument", *min))
+      } else {
+        format!("`{attribute}` takes between {min} and {max} arguments")
+      };
+
+      report
+        .with_message("Attribute argument count mismatch")
+        .with_label(label.with_message(label_msg))
+        .with_note(note)
+        .finish()
+    }
+    CompileErrorKind::DuplicateAttribute { attribute, first } => {
+      let original_label = source
+        .line(*first)
+        .map(|line| Label::new((&path, line.span())).with_message("original"));
+
+      let mut report = report.with_message(format!("Duplicate attribute `{attribute}`"));
+      if let Some(original) = original_label {
+        report = report.with_label(original);
+      }
+      report.with_label(label.with_message("duplicate")).finish()
+    }
+    _ => {
+      let message = format!("{error}");
+      report.with_message(message).with_label(label).finish()
+    }
+  };
+
+  report.eprint((&path, source)).unwrap();
+}
+
 fn capitalize(s: &str) -> String {
   let mut chars = s.chars();
   match chars.next() {

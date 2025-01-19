@@ -184,12 +184,12 @@ test! {
   args:     ("a"),
   stdout:   "",
   stderr:   "
-    error: Unterminated string
-     ——▶ justfile:1:6
-      │
-    1 │ a b= ':
-      │      ^
-  ",
+Error: Unterminated string
+   ╭─[justfile:1:6]
+   │
+ 1 │ a b= ':
+───╯
+",
   status:   EXIT_FAILURE,
 }
 
@@ -201,12 +201,12 @@ test! {
   args:     ("a"),
   stdout:   "",
   stderr:   r#"
-    error: Unterminated string
-     ——▶ justfile:1:6
-      │
-    1 │ a b= ":
-      │      ^
-  "#,
+Error: Unterminated string
+   ╭─[justfile:1:6]
+   │
+ 1 │ a b= ":
+───╯
+"#,
   status:   EXIT_FAILURE,
 }
 
@@ -234,11 +234,11 @@ test! {
   args:     ("a"),
   stdout:   "",
   stderr:   "
-    error: Unterminated string
-     ——▶ justfile:1:6
-      │
-    1 │ a b= ''':
-      │      ^^^
+Error: Unterminated string
+   ╭─[justfile:1:6]
+   │
+ 1 │ a b= ''':
+───╯
   ",
   status:   EXIT_FAILURE,
 }
@@ -251,11 +251,11 @@ test! {
   args:     ("a"),
   stdout:   "",
   stderr:   r#"
-    error: Unterminated string
-     ——▶ justfile:1:6
-      │
-    1 │ a b= """:
-      │      ^^^
+Error: Unterminated string
+   ╭─[justfile:1:6]
+   │
+ 1 │ a b= """:
+───╯
   "#,
   status:   EXIT_FAILURE,
 }
@@ -481,11 +481,11 @@ fn unicode_escape_non_hex() {
     .status(1)
     .stderr(
       r#"
-error: expected hex digit [0-9A-Fa-f] but found `o`
- ——▶ justfile:1:6
-  │
-1 │ x := "\u{foo}"
-  │      ^^^^^^^^^
+Error: expected hex digit [0-9A-Fa-f] but found `o`
+   ╭─[justfile:1:6]
+   │
+ 1 │ x := "\u{foo}"
+───╯
 "#,
     )
     .run();
@@ -517,11 +517,11 @@ fn unicode_escape_too_long() {
     .status(1)
     .stderr(
       r#"
-error: unicode escape sequence starting with `\u{FFFFFFF` longer than six hex digits
- ——▶ justfile:1:6
-  │
-1 │ x := "\u{FFFFFFFFFF}"
-  │      ^^^^^^^^^^^^^^^^
+Error: unicode escape sequence starting with `\u{FFFFFFF` longer than six hex digits
+   ╭─[justfile:1:6]
+   │
+ 1 │ x := "\u{FFFFFFFFFF}"
+───╯
 "#,
     )
     .run();
